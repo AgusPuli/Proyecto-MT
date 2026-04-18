@@ -1,17 +1,22 @@
 import { useEffect, useMemo, useState } from 'react'
+import Fretboard from './components/Fretboard'
+import CircleOfFifths from './components/CircleOfFifths'
+import LabelToggle from './components/LabelToggle'
+import RootSelector from './components/RootSelector'
+import ChordFilterDropdown from './components/ChordFilterDropdown'
+import FingeringPresetSelector from './components/FingeringPresetSelector'
+import ScaleLibrary from './components/ScaleLibrary'
+import CustomScaleBuilder from './components/CustomScaleBuilder'
+import { computeFretboard } from './data/notes'
+import { getAllScales, BUILT_IN_SCALES, CHROMATIC_SCALE } from './data/scales'
+import { scaleRepository } from './data/storage'
+import { BUILT_IN_FINGERINGS, DEFAULT_FINGERING } from './data/fingerings'
+import { loadCustomFingeringPresets, saveCustomFingeringPreset, deleteCustomFingeringPreset } from './data/fingeringStorage'
+import type { ChordFilter, FingeringPreset, LabelMode, NoteName, Scale } from './types'
 
 async function shutdownServer() {
   try { await fetch('/__shutdown') } catch { /* connection closes before response — that's fine */ }
 }
-import Fretboard from './components/Fretboard'
-import LabelToggle from './components/LabelToggle'
-import RootSelector from './components/RootSelector'
-import ScaleLibrary from './components/ScaleLibrary'
-import CustomScaleBuilder from './components/CustomScaleBuilder'
-import { computeFretboard } from './data/notes'
-import { getAllScales, BUILT_IN_SCALES } from './data/scales'
-import { scaleRepository } from './data/storage'
-import type { LabelMode, NoteName, Scale } from './types'
 
 // Default: A Minor Pentatonic — the classic bass starting point
 const DEFAULT_ROOT: NoteName = 'A'
@@ -25,8 +30,16 @@ export default function App() {
   const [customScales, setCustomScales] = useState<Scale[]>(() =>
     scaleRepository.getCustomScales(),
   )
-  const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [off, setOff]                 = useState(false)
+  const [sidebarOpen, setSidebarOpen]     = useState(true)
+  const [off, setOff]                     = useState(false)
+  const [chordFilter, setChordFilter]     = useState<ChordFilter>('all')
+  const [showAllNotes, setShowAllNotes]   = useState(false)
+  const [syncCircle, setSyncCircle]       = useState(false)
+  const [fingeringPresets, setFingeringPresets] = useState<FingeringPreset[]>(() => [
+    ...BUILT_IN_FINGERINGS,
+    ...loadCustomFingeringPresets(),
+  ])
+  const [activeFingeringId, setActiveFingeringId] = useState<string>(DEFAULT_FINGERING.id)
 
   // Heartbeat: keep the dev server informed that this tab is still open.
   // If the browser is closed without using the shutdown button, the server
@@ -38,11 +51,14 @@ export default function App() {
     return () => clearInterval(id)
   }, [])
 
-  // Derived: all notes on the fretboard for the current root + scale
+  // Derived: all notes on the fretboard for the current root + scale + chord filter + fingering
+  // If showAllNotes is true, use the chromatic scale instead
   // Pure computation — cheap to re-run, safe to memoize
+  const activeScale = showAllNotes ? CHROMATIC_SCALE : selectedScale
+  const activeFingeringPreset = fingeringPresets.find(p => p.id === activeFingeringId)
   const fretboardNotes = useMemo(
-    () => computeFretboard(root, selectedScale, TOTAL_FRETS),
-    [root, selectedScale],
+    () => computeFretboard(root, activeScale, TOTAL_FRETS, chordFilter, activeFingeringPreset),
+    [root, activeScale, chordFilter, activeFingeringPreset],
   )
 
   const allScales = useMemo(
@@ -112,6 +128,21 @@ export default function App() {
 
         <LabelToggle value={labelMode} onChange={setLabelMode} />
 
+        <ChordFilterDropdown value={chordFilter} onChange={setChordFilter} />
+
+        {/* Show All Notes button */}
+        <button
+          onClick={() => setShowAllNotes(!showAllNotes)}
+          className={`px-3 py-1.5 text-sm font-medium rounded transition-colors focus:outline-none
+            ${showAllNotes
+              ? 'bg-teal-600 text-white'
+              : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+            }`}
+          title="Toggle all chromatic notes"
+        >
+          {showAllNotes ? 'Mostrar Escala' : 'Mostrar Todo'}
+        </button>
+
         <div className="flex-1" />
 
         <RootSelector value={root} onChange={setRoot} />
@@ -148,25 +179,61 @@ export default function App() {
               onDelete={handleDeleteCustomScale}
             />
 
-            <div className="border-t border-gray-800 pt-6">
+            <div className="border-t border-gray-800 pt-6 space-y-6">
+              <FingeringPresetSelector
+                presets={fingeringPresets}
+                activePresetId={activeFingeringId}
+                onSelect={p => setActiveFingeringId(p.id)}
+                onSave={p => {
+                  // Save to localStorage if custom
+                  if (p.isCustom) saveCustomFingeringPreset(p)
+                  // Update UI
+                  const idx = fingeringPresets.findIndex(x => x.id === p.id)
+                  if (idx >= 0) {
+                    const updated = [...fingeringPresets]
+                    updated[idx] = p
+                    setFingeringPresets(updated)
+                  } else {
+                    setFingeringPresets([...fingeringPresets, p])
+                  }
+                }}
+                onDelete={id => {
+                  deleteCustomFingeringPreset(id)
+                  setFingeringPresets(fingeringPresets.filter(p => p.id !== id))
+                  if (activeFingeringId === id) setActiveFingeringId(DEFAULT_FINGERING.id)
+                }}
+              />
+
               <CustomScaleBuilder onSave={handleSaveCustomScale} />
             </div>
           </div>
         </aside>
 
         {/* ── Main fretboard area ───────────────────────────────────────── */}
-        <main className="flex-1 overflow-auto p-4 md:p-6">
-          <Fretboard
-            notes={fretboardNotes}
-            labelMode={labelMode}
-            totalFrets={TOTAL_FRETS}
-            onFretClick={handleFretClick}
-          />
+        <main className="flex-1 overflow-auto p-4 md:p-6 flex flex-col gap-6">
+          <div>
+            <Fretboard
+              notes={fretboardNotes}
+              labelMode={labelMode}
+              totalFrets={TOTAL_FRETS}
+              onFretClick={handleFretClick}
+            />
 
-          {/* Hint text */}
-          <p className="mt-3 text-xs text-gray-600">
-            Click any fret to set it as the root note.
-          </p>
+            {/* Hint text */}
+            <p className="mt-3 text-xs text-gray-600">
+              Click any fret to set it as the root note.
+            </p>
+          </div>
+
+          {/* Circle of Fifths */}
+          <CircleOfFifths
+            root={root}
+            selectedScale={selectedScale}
+            onRootChange={setRoot}
+            onScaleChange={setScale}
+            synchronized={syncCircle}
+            onSyncChange={setSyncCircle}
+          />
         </main>
       </div>
 

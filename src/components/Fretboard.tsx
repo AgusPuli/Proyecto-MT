@@ -46,7 +46,7 @@ function getLabel(note: FretNote, mode: LabelMode): string {
     case 'solfege':  return NOTE_TO_SOLFEGE[note.note]
     case 'interval': return note.interval
     case 'degree':   return note.degree
-    case 'finger':   return note.finger === 0 ? 'O' : String(note.finger)
+    case 'finger':   return String(note.finger) // 0 = open string, 1-4 = fingers
   }
 }
 

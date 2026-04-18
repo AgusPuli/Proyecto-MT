@@ -5,6 +5,15 @@ import type { Scale, ScaleCategory } from '../types'
 // Each Scale has correct interval arrays verified against standard theory.
 // ---------------------------------------------------------------------------
 
+// Hidden scale: all 12 chromatic notes (used when "Mostrar Todo" is enabled)
+export const CHROMATIC_SCALE: Scale = {
+  id: '__chromatic__',
+  name: 'Chromatic (All Notes)',
+  category: 'major',
+  intervals: ['1', 'b2', '2', 'b3', '3', '4', '#4', '5', 'b6', '6', 'b7', '7'],
+  isCustom: false,
+}
+
 export const BUILT_IN_SCALES: Scale[] = [
   // ── Major ────────────────────────────────────────────────────────────────
   {
