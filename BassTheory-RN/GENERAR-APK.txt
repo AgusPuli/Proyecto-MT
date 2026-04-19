@@ -1,0 +1,28 @@
+PROMPT PARA GENERAR EL APK DE BASSTHEORY
+=========================================
+
+Pegá este texto en Claude Code desde tu notebook con Android Studio instalado:
+
+---
+
+Tengo el proyecto BassTheory-RN en la carpeta BassTheory-RN/ dentro de este repo.
+Es una app React Native con Expo. Necesito que generes el APK para Android
+para poder instalarlo directamente en mi celular sin Play Store.
+
+Pasos que quiero que hagas vos:
+1. Entrar a la carpeta BassTheory-RN/
+2. Correr npm install para instalar dependencias
+3. Usar Android Studio / SDK local para compilar el APK
+4. El APK final tiene que quedar en una carpeta separada llamada APK-Output/
+   en la raíz del proyecto, no mezclado con los archivos de código
+5. Avisarme cuando el APK esté listo y decirme exactamente cómo instalarlo en el celular
+
+Requisitos:
+- Android Studio está instalado en esta máquina
+- Quiero el archivo .apk final, no .aab
+- No quiero subir nada a ningún servidor ni crear cuentas en ningún lado
+- El build tiene que ser 100% local
+
+---
+
+FIN DEL PROMPT
