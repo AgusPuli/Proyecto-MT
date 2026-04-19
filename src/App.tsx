@@ -7,6 +7,7 @@ import ChordFilterDropdown from './components/ChordFilterDropdown'
 import FingeringPresetSelector from './components/FingeringPresetSelector'
 import ScaleLibrary from './components/ScaleLibrary'
 import CustomScaleBuilder from './components/CustomScaleBuilder'
+import ScaleTones from './components/ScaleTones'
 import { computeFretboard } from './data/notes'
 import { getAllScales, BUILT_IN_SCALES, CHROMATIC_SCALE } from './data/scales'
 import { scaleRepository } from './data/storage'
@@ -223,6 +224,9 @@ export default function App() {
             <p className="mt-3 text-xs text-gray-600">
               Click any fret to set it as the root note.
             </p>
+
+            {/* Chord tones info */}
+            <ScaleTones root={root} scale={selectedScale} />
           </div>
 
           {/* Circle of Fifths */}
