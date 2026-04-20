@@ -113,7 +113,7 @@ function PracticeFretboard({ getCellState, onCellClick }: PracticeFretboardProps
                     className="relative flex items-center justify-center"
                     style={{
                       height: CELL_H,
-                      cursor: clickable && cs.type === 'empty' ? 'pointer' : 'default',
+                      cursor: clickable ? 'pointer' : 'default',
                     }}
                   >
                     {/* String line */}
@@ -213,13 +213,14 @@ function NotePicker({
 function CircleNotePicker({
   onPick,
   picked,
-  correct,
+  result,
 }: {
   onPick: (n: NoteName) => void
   picked: NoteName | null
-  correct: NoteName
+  result: 'correct' | 'wrong' | null
 }) {
   const CX = 160, CY = 160, R = 122, BTN_R = 24
+  const isIdle = result === null
 
   return (
     <svg viewBox="0 0 320 320" className="mx-auto w-full max-w-xs">
@@ -231,16 +232,16 @@ function CircleNotePicker({
         const x = CX + R * Math.cos(angle)
         const y = CY + R * Math.sin(angle)
 
-        const isCorrect = picked && note === correct
-        const isWrong   = picked && note === picked && picked !== correct
-        const isIdle    = !picked
+        const isPicked = picked === note
+        const isGreen  = isPicked && result === 'correct'
+        const isRed    = isPicked && result === 'wrong'
 
         let fill   = '#1e293b'
         let stroke = '#334155'
         let txtCol = '#94a3b8'
 
-        if (isCorrect) { fill = '#0f766e'; stroke = '#2dd4bf'; txtCol = '#fff' }
-        if (isWrong)   { fill = '#991b1b'; stroke = '#f87171'; txtCol = '#fff' }
+        if (isGreen) { fill = '#0f766e'; stroke = '#2dd4bf'; txtCol = '#fff' }
+        if (isRed)   { fill = '#991b1b'; stroke = '#f87171'; txtCol = '#fff' }
 
         return (
           <g
@@ -250,7 +251,7 @@ function CircleNotePicker({
           >
             <circle
               cx={x} cy={y} r={BTN_R}
-              fill={fill} stroke={stroke} strokeWidth={isCorrect || isWrong ? 2 : 1}
+              fill={fill} stroke={stroke} strokeWidth={isGreen || isRed ? 2 : 1}
               className={isIdle ? 'hover:fill-slate-700 transition-all' : ''}
             />
             <text
@@ -271,12 +272,12 @@ function CircleNotePicker({
       <text
         x={CX} y={CY}
         textAnchor="middle" dominantBaseline="central"
-        fontSize={picked ? 28 : 32}
+        fontSize={result ? 28 : 32}
         fontWeight="black"
-        fill={picked ? (picked === correct ? '#2dd4bf' : '#f87171') : '#334155'}
+        fill={result === 'correct' ? '#2dd4bf' : result === 'wrong' ? '#f87171' : '#334155'}
         style={{ fontFamily: 'sans-serif', pointerEvents: 'none' }}
       >
-        {picked ? (picked === correct ? '✓' : '✗') : '?'}
+        {result === 'correct' ? '✓' : result === 'wrong' ? '✗' : '?'}
       </text>
     </svg>
   )
@@ -287,8 +288,9 @@ function CircleNotePicker({
 // ─────────────────────────────────────────────────────────────────────────────
 
 function BlindMode({ onExit }: { onExit: () => void }) {
-  const [pos,   setPos]   = useState({ s: ri(0, 3), f: ri(1, PRACTICE_FRETS) })
+  const [pos,    setPos]    = useState({ s: ri(0, 3), f: ri(1, PRACTICE_FRETS) })
   const [picked, setPicked] = useState<NoteName | null>(null)
+  const [result, setResult] = useState<'correct' | 'wrong' | null>(null)
   const [score,  setScore]  = useState({ correct: 0, total: 0 })
   const timer = useTimer()
 
@@ -297,22 +299,29 @@ function BlindMode({ onExit }: { onExit: () => void }) {
   const next = useCallback(() => {
     setPos({ s: ri(0, 3), f: ri(1, PRACTICE_FRETS) })
     setPicked(null)
+    setResult(null)
   }, [])
 
   function handlePick(note: NoteName) {
-    if (picked) return
+    if (result !== null) return   // mid-feedback, ignore
     setPicked(note)
-    setScore(sc => ({
-      correct: sc.correct + (note === correct ? 1 : 0),
-      total: sc.total + 1,
-    }))
-    setTimeout(next, 1500)
+    if (note === correct) {
+      setResult('correct')
+      setScore(sc => ({ correct: sc.correct + 1, total: sc.total + 1 }))
+      setTimeout(next, 1200)
+    } else {
+      setResult('wrong')
+      setScore(sc => ({ correct: sc.correct, total: sc.total + 1 }))
+      // Flash red 700 ms then let them try again — no reveal
+      setTimeout(() => { setPicked(null); setResult(null) }, 700)
+    }
   }
 
   function getCellState(s: number, f: number): CellState {
     if (s !== pos.s || f !== pos.f) return { type: 'hidden' }
-    if (!picked) return { type: 'empty' }
-    return { type: picked === correct ? 'correct' : 'wrong', label: solfege(correct) }
+    if (result === 'correct') return { type: 'correct', label: solfege(correct) }
+    if (result === 'wrong')   return { type: 'wrong' }
+    return { type: 'empty' }
   }
 
   const pct = score.total > 0 ? Math.round((score.correct / score.total) * 100) : 0
@@ -342,13 +351,11 @@ function BlindMode({ onExit }: { onExit: () => void }) {
       {/* Fretboard */}
       <PracticeFretboard getCellState={getCellState} />
 
-      {/* Circle picker + feedback label */}
-      <div className="flex flex-col items-center gap-2">
-        <CircleNotePicker onPick={handlePick} picked={picked} correct={correct} />
-        {picked && (
-          <p className={`text-sm font-bold ${picked === correct ? 'text-teal-400' : 'text-red-400'}`}>
-            {picked === correct ? `¡Correcto! Es ${solfege(correct)}` : `Era ${solfege(correct)}`}
-          </p>
+      {/* Circle picker */}
+      <div className="flex flex-col items-center gap-1">
+        <CircleNotePicker onPick={handlePick} picked={picked} result={result} />
+        {result === 'correct' && (
+          <p className="text-sm font-bold text-teal-400">¡Correcto!</p>
         )}
       </div>
     </div>
@@ -457,45 +464,37 @@ function RememberGame({
   const won        = completed === total && total > 0
 
   function getCellState(s: number, f: number): CellState {
-    const p = positions.find(p => p.string === s && p.fret === f)
-    if (!p) return { type: 'hidden' }
+    const p   = positions.find(p => p.string === s && p.fret === f)
     const key = posKey(s, f)
 
-    if (p.isRoot)                      return { type: 'root',    label: solfege(p.note) }
-    if (guesses.get(key) === 'correct') return { type: 'correct', label: solfege(p.note) }
+    if (p?.isRoot)                      return { type: 'root',    label: solfege(p.note) }
+    if (guesses.get(key) === 'correct') return { type: 'correct', label: solfege(p!.note) }
     if (key === wrongFlash)             return { type: 'wrong' }
-    return { type: 'empty' }
+    return { type: 'hidden' }  // no ghost — user must discover positions
   }
 
   function handleCellClick(s: number, f: number) {
-    const p = positions.find(p => p.string === s && p.fret === f)
-    if (!p || p.isRoot) return
     const key = posKey(s, f)
+    const p   = positions.find(p => p.string === s && p.fret === f)
+    if (p?.isRoot) return
     if (guesses.get(key) === 'correct') return
     setActiveKey(key)
   }
 
   function handleGuess(note: NoteName) {
     if (!activeKey) return
-    const p = positions.find(p => posKey(p.string, p.fret) === activeKey)
-    if (!p) return
-    if (note === p.note) {
+    const [as_, af] = activeKey.split('-').map(Number)
+    const p = positions.find(p => p.string === as_ && p.fret === af)
+    if (p && note === p.note) {
+      // Correct scale note
       setGuesses(g => new Map(g).set(activeKey, 'correct'))
       setActiveKey(null)
     } else {
+      // Wrong note or not a scale position
       setWrongFlash(activeKey)
       setTimeout(() => setWrongFlash(null), 700)
     }
   }
-
-  const alreadyCorrect = [...guesses.entries()]
-    .filter(([, v]) => v === 'correct')
-    .map(([k]) => {
-      const [s, f] = k.split('-').map(Number)
-      const p = positions.find(p => p.string === s && p.fret === f)
-      return p?.note
-    })
-    .filter(Boolean) as NoteName[]
 
   return (
     <div className="flex flex-col gap-5">
@@ -525,10 +524,7 @@ function RememberGame({
       {activeKey && !won && (
         <div>
           <p className="text-xs text-gray-500 mb-2 text-center">¿Qué nota es?</p>
-          <NotePicker
-            onPick={handleGuess}
-            exclude={alreadyCorrect}
-          />
+          <NotePicker onPick={handleGuess} />
         </div>
       )}
 
