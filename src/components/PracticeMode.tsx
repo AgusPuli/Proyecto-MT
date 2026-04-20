@@ -207,32 +207,97 @@ function NotePicker({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Circle note picker — 12 notas en rueda SVG
+// ─────────────────────────────────────────────────────────────────────────────
+
+function CircleNotePicker({
+  onPick,
+  picked,
+  correct,
+}: {
+  onPick: (n: NoteName) => void
+  picked: NoteName | null
+  correct: NoteName
+}) {
+  const CX = 160, CY = 160, R = 122, BTN_R = 24
+
+  return (
+    <svg viewBox="0 0 320 320" className="mx-auto w-full max-w-xs">
+      {/* Subtle ring guide */}
+      <circle cx={CX} cy={CY} r={R} fill="none" stroke="#1e293b" strokeWidth={1} />
+
+      {CHROMATIC_NOTES.map((note, i) => {
+        const angle = (i * 30 - 90) * (Math.PI / 180)
+        const x = CX + R * Math.cos(angle)
+        const y = CY + R * Math.sin(angle)
+
+        const isCorrect = picked && note === correct
+        const isWrong   = picked && note === picked && picked !== correct
+        const isIdle    = !picked
+
+        let fill   = '#1e293b'
+        let stroke = '#334155'
+        let txtCol = '#94a3b8'
+
+        if (isCorrect) { fill = '#0f766e'; stroke = '#2dd4bf'; txtCol = '#fff' }
+        if (isWrong)   { fill = '#991b1b'; stroke = '#f87171'; txtCol = '#fff' }
+
+        return (
+          <g
+            key={note}
+            onClick={() => isIdle && onPick(note)}
+            style={{ cursor: isIdle ? 'pointer' : 'default' }}
+          >
+            <circle
+              cx={x} cy={y} r={BTN_R}
+              fill={fill} stroke={stroke} strokeWidth={isCorrect || isWrong ? 2 : 1}
+              className={isIdle ? 'hover:fill-slate-700 transition-all' : ''}
+            />
+            <text
+              x={x} y={y}
+              textAnchor="middle" dominantBaseline="central"
+              fill={txtCol}
+              fontSize={note.includes('#') ? 10 : 11}
+              fontWeight="bold"
+              style={{ pointerEvents: 'none', fontFamily: 'sans-serif' }}
+            >
+              {NOTE_TO_SOLFEGE[note]}
+            </text>
+          </g>
+        )
+      })}
+
+      {/* Centro: interrogante o resultado */}
+      <text
+        x={CX} y={CY}
+        textAnchor="middle" dominantBaseline="central"
+        fontSize={picked ? 28 : 32}
+        fontWeight="black"
+        fill={picked ? (picked === correct ? '#2dd4bf' : '#f87171') : '#334155'}
+        style={{ fontFamily: 'sans-serif', pointerEvents: 'none' }}
+      >
+        {picked ? (picked === correct ? '✓' : '✗') : '?'}
+      </text>
+    </svg>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // MODO CIEGO
 // ─────────────────────────────────────────────────────────────────────────────
 
 function BlindMode({ onExit }: { onExit: () => void }) {
-  const [pos,     setPos]     = useState({ s: ri(0, 3), f: ri(1, PRACTICE_FRETS) })
-  const [options, setOptions] = useState<NoteName[]>([])
-  const [picked,  setPicked]  = useState<NoteName | null>(null)
-  const [score,   setScore]   = useState({ correct: 0, total: 0 })
+  const [pos,   setPos]   = useState({ s: ri(0, 3), f: ri(1, PRACTICE_FRETS) })
+  const [picked, setPicked] = useState<NoteName | null>(null)
+  const [score,  setScore]  = useState({ correct: 0, total: 0 })
   const timer = useTimer()
 
   const correct = getNoteAtFret(openNote(pos.s), pos.f)
 
-  const genOptions = useCallback((c: NoteName): NoteName[] => {
-    const wrong = shuffle(CHROMATIC_NOTES.filter(n => n !== c))
-    return shuffle([c, ...wrong.slice(0, 3)])
-  }, [])
-
   const next = useCallback(() => {
-    const newPos = { s: ri(0, 3), f: ri(1, PRACTICE_FRETS) }
-    setPos(newPos)
+    setPos({ s: ri(0, 3), f: ri(1, PRACTICE_FRETS) })
     setPicked(null)
   }, [])
-
-  useEffect(() => {
-    setOptions(genOptions(correct))
-  }, [pos, correct, genOptions])
 
   function handlePick(note: NoteName) {
     if (picked) return
@@ -241,19 +306,19 @@ function BlindMode({ onExit }: { onExit: () => void }) {
       correct: sc.correct + (note === correct ? 1 : 0),
       total: sc.total + 1,
     }))
-    setTimeout(next, 1400)
+    setTimeout(next, 1500)
   }
 
   function getCellState(s: number, f: number): CellState {
     if (s !== pos.s || f !== pos.f) return { type: 'hidden' }
-    if (!picked) return { type: 'empty' }     // shows the dot as empty until answered
+    if (!picked) return { type: 'empty' }
     return { type: picked === correct ? 'correct' : 'wrong', label: solfege(correct) }
   }
 
   const pct = score.total > 0 ? Math.round((score.correct / score.total) * 100) : 0
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
       {/* Score */}
       <div className="flex items-center gap-4">
         <span className="text-2xl font-black text-amber-400">{score.correct}</span>
@@ -277,30 +342,15 @@ function BlindMode({ onExit }: { onExit: () => void }) {
       {/* Fretboard */}
       <PracticeFretboard getCellState={getCellState} />
 
-      {/* Feedback */}
-      {picked && (
-        <div className={`text-center text-lg font-black ${picked === correct ? 'text-teal-400' : 'text-red-400'}`}>
-          {picked === correct
-            ? `✓ ¡Correcto! Es ${solfege(correct)}`
-            : `✗ Era ${solfege(correct)}`}
-        </div>
-      )}
-
-      {/* Options */}
-      {!picked && (
-        <div className="flex flex-wrap justify-center gap-3">
-          {options.map(note => (
-            <button
-              key={note}
-              onClick={() => handlePick(note)}
-              className="w-20 py-3 rounded-xl bg-gray-800 text-white font-bold text-base
-                hover:bg-teal-700 transition-colors"
-            >
-              {solfege(note)}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Circle picker + feedback label */}
+      <div className="flex flex-col items-center gap-2">
+        <CircleNotePicker onPick={handlePick} picked={picked} correct={correct} />
+        {picked && (
+          <p className={`text-sm font-bold ${picked === correct ? 'text-teal-400' : 'text-red-400'}`}>
+            {picked === correct ? `¡Correcto! Es ${solfege(correct)}` : `Era ${solfege(correct)}`}
+          </p>
+        )}
+      </div>
     </div>
   )
 }
