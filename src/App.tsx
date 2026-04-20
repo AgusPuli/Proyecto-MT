@@ -9,6 +9,7 @@ import ScaleLibrary from './components/ScaleLibrary'
 import CustomScaleBuilder from './components/CustomScaleBuilder'
 import ScaleTones from './components/ScaleTones'
 import PracticeMode from './components/PracticeMode'
+import TabEditor from './components/TabEditor'
 import { computeFretboard } from './data/notes'
 import { getAllScales, BUILT_IN_SCALES, CHROMATIC_SCALE } from './data/scales'
 import { scaleRepository } from './data/storage'
@@ -43,6 +44,7 @@ export default function App() {
   ])
   const [activeFingeringId, setActiveFingeringId] = useState<string>(DEFAULT_FINGERING.id)
   const [practiceOpen, setPracticeOpen] = useState(false)
+  const [tabOpen, setTabOpen]           = useState(false)
 
   // Heartbeat: keep the dev server informed that this tab is still open.
   // If the browser is closed without using the shutdown button, the server
@@ -155,6 +157,15 @@ export default function App() {
           🎮 Práctica
         </button>
 
+        {/* Tab editor button */}
+        <button
+          onClick={() => setTabOpen(true)}
+          className="px-3 py-1.5 text-sm font-medium rounded bg-gray-800 text-gray-300 hover:bg-teal-900/50 hover:text-teal-300 transition-colors focus:outline-none"
+          title="Editor de tablatura"
+        >
+          🎸 Tabs
+        </button>
+
         <div className="flex-1" />
 
         <RootSelector value={root} onChange={setRoot} />
@@ -254,6 +265,9 @@ export default function App() {
 
       {/* ── Practice mode overlay ───────────────────────────────────────── */}
       <PracticeMode visible={practiceOpen} onClose={() => setPracticeOpen(false)} />
+
+      {/* ── Tab editor overlay ──────────────────────────────────────────── */}
+      <TabEditor visible={tabOpen} onClose={() => setTabOpen(false)} />
 
       {/* ── Bottom info bar ──────────────────────────────────────────────── */}
       <footer className="flex-shrink-0 bg-gray-900 border-t border-gray-800 px-4 py-2 flex flex-wrap items-center gap-3">
