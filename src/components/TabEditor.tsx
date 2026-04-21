@@ -73,15 +73,17 @@ const DURATION_WIDTH: Record<Duration, number> = {
   s: 24,   // sixteenth — ¼ quarter
 }
 function beatWidth(dur: Duration): number { return DURATION_WIDTH[dur] }
+const TIME_SIG_W     = 30    // extra space for time-signature numerals (first measure, first row)
 const STRING_SPACING = 22
-const TOP_PAD        = 34    // space above first string: section label (y≤16) + stems (y=16..28)
+const TOP_PAD        = 40    // space above first string: section label + stems + note heads
 const BOT_PAD        = 14
-const SVG_H          = TOP_PAD + STRING_SPACING * 3 + BOT_PAD  // 114px
+const SVG_H          = TOP_PAD + STRING_SPACING * 3 + BOT_PAD  // 120px
 const STRING_Y       = [0,1,2,3].map(i => TOP_PAD + STRING_SPACING * i)
 
-const STEM_BOT = TOP_PAD - 6   // bottom of stem (just above first string)
-const STEM_TOP = 18             // top of stem
-const FLAG_CLR = '#6b7280'
+const STEM_BOT = TOP_PAD - 6   // 34 — bottom of stem / note-head centre
+const STEM_TOP = 10             // top of stem (higher → longer stems)
+const BEAM_H   = 3             // beam bar thickness
+const FLAG_CLR = '#9ca3af'     // slightly lighter for better contrast
 
 const DURATION_INFO: Record<Duration, { label: string; symbol: string; short: string }> = {
   w: { label: 'Redonda',     symbol: '○',  short: 'w' },
@@ -210,45 +212,86 @@ function SongLibrary({ currentId, onLoad, onClose }: {
 // Duration stem renderer (drawn above first string)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function BeatStem({ cx, bw, dur }: { cx: number; bw: number; dur: Duration }) {
-  const x = Math.round(cx + bw / 2)
+/**
+ * Renders the rhythmic notation above the tab staff for a single beat.
+ * `beamed` = true → omit flags (a horizontal beam will be drawn by the parent).
+ */
+function BeatStem({ cx, bw, dur, beamed = false }: {
+  cx: number; bw: number; dur: Duration; beamed?: boolean
+}) {
+  const x   = Math.round(cx + bw / 2)
+  const hy  = STEM_BOT - 1           // note-head vertical centre
 
+  // ── Whole note: open oval, no stem ───────────────────────────────────────
   if (dur === 'w') {
-    // Redonda: hollow circle above, no stem
-    return <circle cx={x} cy={STEM_BOT - 3} r={4} fill="none" stroke={FLAG_CLR} strokeWidth={1.5} />
+    return (
+      <ellipse cx={x} cy={hy} rx={5} ry={3.5}
+        fill="none" stroke={FLAG_CLR} strokeWidth={1.5} />
+    )
   }
 
   const stemEl = (
-    <line x1={x} y1={STEM_TOP} x2={x} y2={STEM_BOT} stroke={FLAG_CLR} strokeWidth={1.5} />
+    <line x1={x} y1={STEM_TOP} x2={x} y2={STEM_BOT}
+      stroke={FLAG_CLR} strokeWidth={1.5} />
   )
 
+  // ── Half note: open oval + stem ───────────────────────────────────────────
   if (dur === 'h') {
-    // Blanca: stem + small crossbar at top
     return <>
       {stemEl}
-      <line x1={x-4} y1={STEM_TOP} x2={x+4} y2={STEM_TOP} stroke={FLAG_CLR} strokeWidth={1.5} />
+      <ellipse cx={x} cy={hy} rx={5} ry={3.5}
+        fill="none" stroke={FLAG_CLR} strokeWidth={1.5} />
     </>
   }
-  if (dur === 'q') {
-    // Negra: just stem (quarter is the silent default — always show so user knows it's set)
-    return stemEl
-  }
+
+  // Quarter / eighth / sixteenth: filled oval + stem
+  const head = <ellipse cx={x} cy={hy} rx={4.5} ry={3} fill={FLAG_CLR} />
+
+  if (dur === 'q') return <>{stemEl}{head}</>
+
   if (dur === 'e') {
-    // Corchea: stem + one flag
     return <>
       {stemEl}
-      <path d={`M ${x} ${STEM_TOP} C ${x+9} ${STEM_TOP+4} ${x+8} ${STEM_TOP+9} ${x+1} ${STEM_TOP+11}`}
-        fill="none" stroke={FLAG_CLR} strokeWidth={1.5} strokeLinecap="round" />
+      {head}
+      {!beamed && (
+        <path d={`M ${x} ${STEM_TOP} C ${x+9} ${STEM_TOP+5} ${x+8} ${STEM_TOP+10} ${x+1} ${STEM_TOP+12}`}
+          fill="none" stroke={FLAG_CLR} strokeWidth={1.5} strokeLinecap="round" />
+      )}
     </>
   }
-  // Semicorchea: stem + two flags
+
+  // Sixteenth
   return <>
     {stemEl}
-    <path d={`M ${x} ${STEM_TOP}   C ${x+9} ${STEM_TOP+4}  ${x+8} ${STEM_TOP+9}  ${x+1} ${STEM_TOP+11}`}
-      fill="none" stroke={FLAG_CLR} strokeWidth={1.5} strokeLinecap="round" />
-    <path d={`M ${x} ${STEM_TOP+7} C ${x+9} ${STEM_TOP+11} ${x+8} ${STEM_TOP+16} ${x+1} ${STEM_TOP+18}`}
-      fill="none" stroke={FLAG_CLR} strokeWidth={1.5} strokeLinecap="round" />
+    {head}
+    {!beamed && <>
+      <path d={`M ${x} ${STEM_TOP}   C ${x+9} ${STEM_TOP+5}  ${x+8} ${STEM_TOP+10} ${x+1} ${STEM_TOP+12}`}
+        fill="none" stroke={FLAG_CLR} strokeWidth={1.5} strokeLinecap="round" />
+      <path d={`M ${x} ${STEM_TOP+7} C ${x+9} ${STEM_TOP+12} ${x+8} ${STEM_TOP+17} ${x+1} ${STEM_TOP+19}`}
+        fill="none" stroke={FLAG_CLR} strokeWidth={1.5} strokeLinecap="round" />
+    </>}
   </>
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Beaming helper — finds runs of consecutive same-duration 8th/16th beats
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface BeamGroup { start: number; end: number; dur: 'e'|'s' }
+
+function computeBeamGroups(beats: TabBeat[]): BeamGroup[] {
+  const groups: BeamGroup[] = []
+  let i = 0
+  while (i < beats.length) {
+    const d = beatDur(beats[i])
+    if (d === 'e' || d === 's') {
+      let j = i + 1
+      while (j < beats.length && beatDur(beats[j]) === d) j++
+      if (j - i >= 2) groups.push({ start: i, end: j - 1, dur: d })
+      i = j
+    } else { i++ }
+  }
+  return groups
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -257,20 +300,27 @@ function BeatStem({ cx, bw, dur }: { cx: number; bw: number; dur: Duration }) {
 
 interface RowEntry { measure: TabMeasure; globalIdx: number }
 
-function TabRowSvg({ entries, cursor, onCellClick, onCellContextMenu }: {
+function TabRowSvg({ entries, cursor, timeSignature, tempo, isFirstRow, onCellClick, onCellContextMenu }: {
   entries:            RowEntry[]
   cursor:             Cursor | null
+  timeSignature?:     [number, number]
+  tempo?:             number
+  isFirstRow?:        boolean
   onCellClick:        (mi:number, bi:number, si:number) => void
   onCellContextMenu:  (mi:number, bi:number, si:number, x:number, y:number) => void
 }) {
-  // Measure widths = label + sum of per-beat widths (variable by duration)
+  // First measure of first row gets extra space for time-signature + tempo
+  const extraLeft = (isFirstRow && timeSignature) ? TIME_SIG_W : 0
+
+  // Measure widths = label (+ optional time-sig space) + sum of per-beat widths
   const measWidths = entries.map((e, i) =>
-    (i===0 ? LABEL_W : 0) + e.measure.beats.reduce((acc, b) => acc + beatWidth(beatDur(b)), 0)
+    (i===0 ? LABEL_W + (isFirstRow && timeSignature ? extraLeft : 0) : 0) +
+    e.measure.beats.reduce((acc, b) => acc + beatWidth(beatDur(b)), 0)
   )
   const startX: number[] = []
-  let cx = 0
-  for (let i = 0; i < entries.length; i++) { startX.push(cx); cx += measWidths[i] + 2 }
-  const totalW = cx + 4
+  let cxAcc = 0
+  for (let i = 0; i < entries.length; i++) { startX.push(cxAcc); cxAcc += measWidths[i] + 2 }
+  const totalW = cxAcc + 4
 
   const barTop = STRING_Y[0] - 9
   const barBot = STRING_Y[3] + 9
@@ -286,21 +336,28 @@ function TabRowSvg({ entries, cursor, onCellClick, onCellContextMenu }: {
       {entries.map(({measure, globalIdx:mi}, i) => {
         const mx  = startX[i]
         const lw  = i===0 ? LABEL_W : 0
-        const bx0 = mx + lw
-        // Total beat area width = sum of each beat's variable width
+        // beats start after string labels (+ time sig space for first measure first row)
+        const bx0 = mx + lw + (i===0 && isFirstRow && timeSignature ? extraLeft : 0)
         const baw = measure.beats.reduce((acc, b) => acc + beatWidth(beatDur(b)), 0)
 
-        // Pre-compute beat start positions (accumulated variable widths)
+        // Per-beat start positions (accumulated variable widths)
         const beatStartX: number[] = []
-        let bxAcc = bx0
+        let bxAcc2 = bx0
         for (const beat of measure.beats) {
-          beatStartX.push(bxAcc)
-          bxAcc += beatWidth(beatDur(beat))
+          beatStartX.push(bxAcc2)
+          bxAcc2 += beatWidth(beatDur(beat))
+        }
+
+        // Beam groups: consecutive e/s beats within this measure
+        const beamGroups = computeBeamGroups(measure.beats)
+        const beamedSet  = new Set<number>()
+        for (const g of beamGroups) {
+          for (let k = g.start; k <= g.end; k++) beamedSet.add(k)
         }
 
         return (
           <g key={measure.id}>
-            {/* String labels */}
+            {/* ── String labels ────────────────────────────────────── */}
             {i===0 && STRING_Y.map((y,si) => (
               <text key={si} x={mx+5} y={y} textAnchor="start" dominantBaseline="central"
                 fontSize={11} fontWeight="bold" fill="#6b7280" style={{pointerEvents:'none'}}>
@@ -308,15 +365,40 @@ function TabRowSvg({ entries, cursor, onCellClick, onCellContextMenu }: {
               </text>
             ))}
 
-            {/* Section label */}
+            {/* ── Time signature (first row, first measure) ─────────── */}
+            {i===0 && isFirstRow && timeSignature && (
+              <>
+                {/* Tempo above staff */}
+                {tempo && (
+                  <text x={mx + LABEL_W + extraLeft / 2} y={7}
+                    textAnchor="middle" fontSize={8} fill="#6b7280" style={{pointerEvents:'none'}}>
+                    ♩={tempo}
+                  </text>
+                )}
+                {/* Numerator */}
+                <text x={mx + LABEL_W + extraLeft / 2} y={STRING_Y[0] + 5}
+                  textAnchor="middle" fontSize={19} fontWeight="900"
+                  fill="#9ca3af" fontFamily="serif" style={{pointerEvents:'none'}}>
+                  {timeSignature[0]}
+                </text>
+                {/* Denominator */}
+                <text x={mx + LABEL_W + extraLeft / 2} y={STRING_Y[2] + 7}
+                  textAnchor="middle" fontSize={19} fontWeight="900"
+                  fill="#9ca3af" fontFamily="serif" style={{pointerEvents:'none'}}>
+                  {timeSignature[1]}
+                </text>
+              </>
+            )}
+
+            {/* ── Section label ─────────────────────────────────────── */}
             {measure.section && (
-              <text x={bx0+5} y={13} fontSize={9} fontWeight="bold" fill="#f59e0b"
+              <text x={bx0+4} y={8} fontSize={8} fontWeight="bold" fill="#f59e0b"
                 style={{pointerEvents:'none'}}>
                 ▶ {measure.section.toUpperCase()}
               </text>
             )}
 
-            {/* Left barline */}
+            {/* ── Left barline ──────────────────────────────────────── */}
             <line x1={bx0} y1={barTop} x2={bx0} y2={barBot}
               stroke={measure.repeatStart?'#f59e0b':'#9ca3af'}
               strokeWidth={measure.repeatStart?3:2} />
@@ -326,19 +408,19 @@ function TabRowSvg({ entries, cursor, onCellClick, onCellContextMenu }: {
               <circle cx={bx0+9} cy={STRING_Y[2]} r={2.5} fill="#f59e0b" />
             </>}
 
-            {/* Beats */}
+            {/* ── Beats ─────────────────────────────────────────────── */}
             {measure.beats.map((beat, bi) => {
-              const bx  = beatStartX[bi]
-              const bw  = beatWidth(beatDur(beat))
-              const dur = beatDur(beat)
+              const bx     = beatStartX[bi]
+              const bw     = beatWidth(beatDur(beat))
+              const dur    = beatDur(beat)
               const halfBw = bw / 2
+              const isBeamed = beamedSet.has(bi)
 
               return (
                 <g key={beat.id}>
-                  {/* Duration stem above beat — width-aware */}
-                  <BeatStem cx={bx} bw={bw} dur={dur} />
+                  {/* Stem + note head (flags suppressed when beamed) */}
+                  <BeatStem cx={bx} bw={bw} dur={dur} beamed={isBeamed} />
 
-                  {/* Cells */}
                   {STRING_Y.map((y, si) => {
                     const cell  = beat.cells[si]
                     const text  = cellText(cell)
@@ -346,20 +428,17 @@ function TabRowSvg({ entries, cursor, onCellClick, onCellContextMenu }: {
 
                     return (
                       <g key={si}>
-                        {/* Selection background */}
                         {isCur && (
                           <rect x={bx+2} y={y-10} width={bw-4} height={20}
                             fill="#0d3d38" rx={3} data-cursor="true" />
                         )}
 
-                        {/* PM indicator */}
                         {(cell.isPM ?? false) && (
                           <text x={bx+halfBw} y={y-13} textAnchor="middle"
-                            fontSize={8} fontWeight="bold" fill="#8b5cf6"
+                            fontSize={7} fontWeight="bold" fill="#8b5cf6"
                             style={{pointerEvents:'none'}}>PM</text>
                         )}
 
-                        {/* Note text */}
                         {text ? (
                           <text x={bx+halfBw} y={y} textAnchor="middle" dominantBaseline="central"
                             fontSize={text.length>3?9:text.length>2?10:12} fontWeight="700"
@@ -372,7 +451,6 @@ function TabRowSvg({ entries, cursor, onCellClick, onCellContextMenu }: {
                             fill="#2dd4bf" rx={1} className="tab-cursor-blink" data-cursor="true" />
                         ) : null}
 
-                        {/* Click / right-click target */}
                         <rect
                           x={bx} y={y-11} width={bw} height={22} fill="transparent"
                           style={{cursor:'pointer'}}
@@ -386,7 +464,23 @@ function TabRowSvg({ entries, cursor, onCellClick, onCellContextMenu }: {
               )
             })}
 
-            {/* Right barline */}
+            {/* ── Beams (drawn after all stems so they're on top) ─── */}
+            {beamGroups.map((g, gi) => {
+              const x1 = Math.round(beatStartX[g.start] + beatWidth(g.dur) / 2)
+              const x2 = Math.round(beatStartX[g.end]   + beatWidth(g.dur) / 2)
+              return (
+                <g key={gi}>
+                  <line x1={x1} y1={STEM_TOP} x2={x2} y2={STEM_TOP}
+                    stroke={FLAG_CLR} strokeWidth={BEAM_H} strokeLinecap="round" />
+                  {g.dur === 's' && (
+                    <line x1={x1} y1={STEM_TOP+5} x2={x2} y2={STEM_TOP+5}
+                      stroke={FLAG_CLR} strokeWidth={BEAM_H} strokeLinecap="round" />
+                  )}
+                </g>
+              )
+            })}
+
+            {/* ── Right barline ─────────────────────────────────────── */}
             <line x1={bx0+baw} y1={barTop} x2={bx0+baw} y2={barBot}
               stroke={measure.repeatEnd?'#f59e0b':'#9ca3af'} strokeWidth={measure.repeatEnd?3:2} />
             {measure.repeatEnd && <>
@@ -395,7 +489,7 @@ function TabRowSvg({ entries, cursor, onCellClick, onCellContextMenu }: {
               <circle cx={bx0+baw-9} cy={STRING_Y[2]} r={2.5} fill="#f59e0b" />
             </>}
 
-            {/* Measure number */}
+            {/* ── Measure number ─────────────────────────────────────── */}
             <text x={bx0+baw/2} y={SVG_H-3} textAnchor="middle" fontSize={8} fill="#374151"
               style={{pointerEvents:'none'}}>{mi+1}</text>
           </g>
@@ -917,7 +1011,11 @@ ${svgBlocks.map(s=>`<div class="row">${s}</div>`).join('\n')}
             {rows.map((row,ri) => (
               <div key={ri} className="overflow-x-auto">
                 <TabRowSvg
-                  entries={row} cursor={cursor}
+                  entries={row}
+                  cursor={cursor}
+                  timeSignature={song.timeSignature}
+                  tempo={song.tempo}
+                  isFirstRow={ri===0}
                   onCellClick={(mi,bi,si) => { setCursor({measureIdx:mi,beatIdx:bi,stringIdx:si}); containerRef.current?.focus() }}
                   onCellContextMenu={handleCellContextMenu}
                 />
