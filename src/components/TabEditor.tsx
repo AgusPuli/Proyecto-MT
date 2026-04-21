@@ -62,8 +62,17 @@ interface CtxMenu {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const STRING_LABELS  = ['G', 'D', 'A', 'E']
-const BEAT_W         = 46
 const LABEL_W        = 24
+
+/** Pixel width per beat, proportional to note duration */
+const DURATION_WIDTH: Record<Duration, number> = {
+  w: 96,   // whole    — 4× quarter
+  h: 68,   // half     — 2× quarter
+  q: 46,   // quarter  — baseline
+  e: 32,   // eighth   — ½ quarter
+  s: 24,   // sixteenth — ¼ quarter
+}
+function beatWidth(dur: Duration): number { return DURATION_WIDTH[dur] }
 const STRING_SPACING = 22
 const TOP_PAD        = 34    // space above first string: section label (y≤16) + stems (y=16..28)
 const BOT_PAD        = 14
@@ -201,8 +210,8 @@ function SongLibrary({ currentId, onLoad, onClose }: {
 // Duration stem renderer (drawn above first string)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function BeatStem({ cx, dur }: { cx: number; dur: Duration }) {
-  const x = Math.round(cx + BEAT_W / 2)
+function BeatStem({ cx, bw, dur }: { cx: number; bw: number; dur: Duration }) {
+  const x = Math.round(cx + bw / 2)
 
   if (dur === 'w') {
     // Redonda: hollow circle above, no stem
@@ -254,10 +263,13 @@ function TabRowSvg({ entries, cursor, onCellClick, onCellContextMenu }: {
   onCellClick:        (mi:number, bi:number, si:number) => void
   onCellContextMenu:  (mi:number, bi:number, si:number, x:number, y:number) => void
 }) {
-  const widths = entries.map((e, i) => (i===0 ? LABEL_W : 0) + BEAT_W * e.measure.beats.length)
+  // Measure widths = label + sum of per-beat widths (variable by duration)
+  const measWidths = entries.map((e, i) =>
+    (i===0 ? LABEL_W : 0) + e.measure.beats.reduce((acc, b) => acc + beatWidth(beatDur(b)), 0)
+  )
   const startX: number[] = []
   let cx = 0
-  for (let i = 0; i < entries.length; i++) { startX.push(cx); cx += widths[i] + 2 }
+  for (let i = 0; i < entries.length; i++) { startX.push(cx); cx += measWidths[i] + 2 }
   const totalW = cx + 4
 
   const barTop = STRING_Y[0] - 9
@@ -275,7 +287,16 @@ function TabRowSvg({ entries, cursor, onCellClick, onCellContextMenu }: {
         const mx  = startX[i]
         const lw  = i===0 ? LABEL_W : 0
         const bx0 = mx + lw
-        const baw = BEAT_W * measure.beats.length
+        // Total beat area width = sum of each beat's variable width
+        const baw = measure.beats.reduce((acc, b) => acc + beatWidth(beatDur(b)), 0)
+
+        // Pre-compute beat start positions (accumulated variable widths)
+        const beatStartX: number[] = []
+        let bxAcc = bx0
+        for (const beat of measure.beats) {
+          beatStartX.push(bxAcc)
+          bxAcc += beatWidth(beatDur(beat))
+        }
 
         return (
           <g key={measure.id}>
@@ -307,13 +328,15 @@ function TabRowSvg({ entries, cursor, onCellClick, onCellContextMenu }: {
 
             {/* Beats */}
             {measure.beats.map((beat, bi) => {
-              const bx  = bx0 + bi * BEAT_W
+              const bx  = beatStartX[bi]
+              const bw  = beatWidth(beatDur(beat))
               const dur = beatDur(beat)
+              const halfBw = bw / 2
 
               return (
                 <g key={beat.id}>
-                  {/* Duration stem above beat */}
-                  <BeatStem cx={bx} dur={dur} />
+                  {/* Duration stem above beat — width-aware */}
+                  <BeatStem cx={bx} bw={bw} dur={dur} />
 
                   {/* Cells */}
                   {STRING_Y.map((y, si) => {
@@ -325,33 +348,33 @@ function TabRowSvg({ entries, cursor, onCellClick, onCellContextMenu }: {
                       <g key={si}>
                         {/* Selection background */}
                         {isCur && (
-                          <rect x={bx+2} y={y-10} width={BEAT_W-4} height={20}
+                          <rect x={bx+2} y={y-10} width={bw-4} height={20}
                             fill="#0d3d38" rx={3} data-cursor="true" />
                         )}
 
                         {/* PM indicator */}
                         {(cell.isPM ?? false) && (
-                          <text x={bx+BEAT_W/2} y={y-13} textAnchor="middle"
+                          <text x={bx+halfBw} y={y-13} textAnchor="middle"
                             fontSize={8} fontWeight="bold" fill="#8b5cf6"
                             style={{pointerEvents:'none'}}>PM</text>
                         )}
 
                         {/* Note text */}
                         {text ? (
-                          <text x={bx+BEAT_W/2} y={y} textAnchor="middle" dominantBaseline="central"
-                            fontSize={text.length>3?9:text.length>2?11:13} fontWeight="700"
+                          <text x={bx+halfBw} y={y} textAnchor="middle" dominantBaseline="central"
+                            fontSize={text.length>3?9:text.length>2?10:12} fontWeight="700"
                             fill={isCur?'#2dd4bf':text==='x'?'#f87171':'#f1f5f9'}
                             style={{pointerEvents:'none'}}>
                             {text}
                           </text>
                         ) : isCur ? (
-                          <rect x={bx+BEAT_W/2-1} y={y-7} width={2} height={14}
+                          <rect x={bx+halfBw-1} y={y-7} width={2} height={14}
                             fill="#2dd4bf" rx={1} className="tab-cursor-blink" data-cursor="true" />
                         ) : null}
 
                         {/* Click / right-click target */}
                         <rect
-                          x={bx} y={y-11} width={BEAT_W} height={22} fill="transparent"
+                          x={bx} y={y-11} width={bw} height={22} fill="transparent"
                           style={{cursor:'pointer'}}
                           onClick={() => onCellClick(mi, bi, si)}
                           onContextMenu={e => { e.preventDefault(); onCellContextMenu(mi, bi, si, e.clientX, e.clientY) }}
