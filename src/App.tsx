@@ -132,7 +132,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-950 text-white overflow-hidden" data-theme={theme}>
+    <div className="flex flex-col h-screen bg-gray-950 text-white overflow-hidden">
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <header className="flex-shrink-0 bg-gray-900 border-b border-gray-800 px-4 py-2 flex flex-wrap items-center gap-3 z-20">
