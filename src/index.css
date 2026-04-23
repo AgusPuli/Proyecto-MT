@@ -2,9 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 html, body, #root {
   height: 100%;
@@ -12,18 +10,271 @@ html, body, #root {
   padding: 0;
 }
 
-/* Thin scrollbar for dark theme */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* ─────────────────────────────────────────────────────────────────────────────
+   CIRCLE OF FIFTHS — CSS CUSTOM PROPERTIES
+   Used by SVG fill/stroke in CircleOfFifths.tsx (CSS vars work in inline SVG)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Background disc */
+  --circle-bg:           #0f172a;
+  --circle-bg-inner:     #1e3a5c;
+
+  /* Center circle */
+  --circle-center:       #030712;
+  --circle-center-inner: #112240;
+  --circle-center-stroke:#1e293b;
+
+  /* Structural */
+  --circle-outer-ring:   #1e2d45;
+  --circle-hover:        #334155;
+
+  /* Text inside SVG */
+  --circle-text-primary:  #e2e8f0;
+  --circle-text-secondary:#94a3b8;
+  --circle-text-selected: #fbbf24;
+  --circle-text-muted:    #475569;
+
+  /* Sector fills — by distance */
+  --circle-d0: #92400e;
+  --circle-d1: #0d3d38;
+  --circle-d2: #1a3a5c;
+  --circle-d3: #1e2d45;
+  --circle-d4: #1a2535;
+  --circle-d5: #151e2e;
+  --circle-d6: #3b1515;
+
+  /* Label / accent colors — by distance */
+  --circle-label-d0: #fbbf24;
+  --circle-label-d1: #2dd4bf;
+  --circle-label-d2: #60a5fa;
+  --circle-label-d3: #94a3b8;
+  --circle-label-d4: #64748b;
+  --circle-label-d5: #475569;
+  --circle-label-d6: #f87171;
 }
-::-webkit-scrollbar-track {
-  background: #030712;
+
+/* ── EVANGELION theme ──────────────────────────────────────────────────────── */
+[data-theme="evangelion"] {
+  --circle-bg:           #0e0028;
+  --circle-bg-inner:     #280060;
+
+  --circle-center:       #06000f;
+  --circle-center-inner: #1a0040;
+  --circle-center-stroke:#5500aa;
+
+  --circle-outer-ring:   #3a0080;
+  --circle-hover:        #1e0050;
+
+  --circle-text-primary:  #d8b4fe;
+  --circle-text-secondary:#a78bfa;
+  --circle-text-selected: #c084fc;
+  --circle-text-muted:    #6d5a9a;
+
+  --circle-d0: #35007a;
+  --circle-d1: #0a2212;
+  --circle-d2: #001455;
+  --circle-d3: #130035;
+  --circle-d4: #0c0025;
+  --circle-d5: #07001a;
+  --circle-d6: #1e0055;
+
+  --circle-label-d0: #c084fc;
+  --circle-label-d1: #4ade80;
+  --circle-label-d2: #60a5fa;
+  --circle-label-d3: #a78bfa;
+  --circle-label-d4: #7c6fad;
+  --circle-label-d5: #4a3f7a;
+  --circle-label-d6: #a855f7;
 }
-::-webkit-scrollbar-thumb {
-  background: #374151;
-  border-radius: 3px;
+
+/* ── HIGH CONTRAST theme ───────────────────────────────────────────────────── */
+[data-theme="high-contrast"] {
+  --circle-bg:           #000000;
+  --circle-bg-inner:     #111111;
+
+  --circle-center:       #000000;
+  --circle-center-inner: #0d0d0d;
+  --circle-center-stroke:#555555;
+
+  --circle-outer-ring:   #3a3a3a;
+  --circle-hover:        #1a1a1a;
+
+  --circle-text-primary:  #ffffff;
+  --circle-text-secondary:#cccccc;
+  --circle-text-selected: #ffff00;
+  --circle-text-muted:    #888888;
+
+  --circle-d0: #504400;
+  --circle-d1: #004444;
+  --circle-d2: #002255;
+  --circle-d3: #1a1a1a;
+  --circle-d4: #111111;
+  --circle-d5: #090909;
+  --circle-d6: #440000;
+
+  --circle-label-d0: #ffff00;
+  --circle-label-d1: #00ffff;
+  --circle-label-d2: #4499ff;
+  --circle-label-d3: #cccccc;
+  --circle-label-d4: #999999;
+  --circle-label-d5: #666666;
+  --circle-label-d6: #ff4444;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #4b5563;
-}
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SCROLLBAR
+   ───────────────────────────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar          { width: 6px; height: 6px; }
+::-webkit-scrollbar-track    { background: #030712; }
+::-webkit-scrollbar-thumb    { background: #374151; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+
+[data-theme="evangelion"] ::-webkit-scrollbar-track { background: #06000f; }
+[data-theme="evangelion"] ::-webkit-scrollbar-thumb { background: #5500aa; }
+[data-theme="evangelion"] ::-webkit-scrollbar-thumb:hover { background: #7700dd; }
+
+[data-theme="high-contrast"] ::-webkit-scrollbar-track { background: #000; }
+[data-theme="high-contrast"] ::-webkit-scrollbar-thumb { background: #555; }
+[data-theme="high-contrast"] ::-webkit-scrollbar-thumb:hover { background: #888; }
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TAILWIND OVERRIDES — EVANGELION
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Backgrounds */
+[data-theme="evangelion"] .bg-gray-950    { background-color: #06000f !important; }
+[data-theme="evangelion"] .bg-gray-900    { background-color: #0f0022 !important; }
+[data-theme="evangelion"] .bg-gray-800    { background-color: #1a0038 !important; }
+[data-theme="evangelion"] .bg-gray-700    { background-color: #260050 !important; }
+[data-theme="evangelion"] .bg-gray-800\/40  { background-color: rgb(26 0 56 / 0.4) !important; }
+[data-theme="evangelion"] .bg-gray-800\/50  { background-color: rgb(26 0 56 / 0.5) !important; }
+[data-theme="evangelion"] .bg-gray-800\/60  { background-color: rgb(26 0 56 / 0.6) !important; }
+[data-theme="evangelion"] .bg-gray-900\/50  { background-color: rgb(15 0 34 / 0.6) !important; }
+[data-theme="evangelion"] .bg-black\/80     { background-color: rgb(4 0 12 / 0.88) !important; }
+
+/* Borders */
+[data-theme="evangelion"] .border-gray-800 { border-color: #300060 !important; }
+[data-theme="evangelion"] .border-gray-700 { border-color: #420080 !important; }
+[data-theme="evangelion"] .border-gray-600 { border-color: #5500a0 !important; }
+[data-theme="evangelion"] .border-gray-700\/40 { border-color: rgb(66 0 128 / 0.4) !important; }
+[data-theme="evangelion"] .border-gray-800\/40 { border-color: rgb(48 0 96 / 0.4) !important; }
+
+/* Text */
+[data-theme="evangelion"] .text-white    { color: #f0e6ff !important; }
+[data-theme="evangelion"] .text-gray-200 { color: #e9d5ff !important; }
+[data-theme="evangelion"] .text-gray-300 { color: #d8b4fe !important; }
+[data-theme="evangelion"] .text-gray-400 { color: #c4b5fd !important; }
+[data-theme="evangelion"] .text-gray-500 { color: #a78bfa !important; }
+[data-theme="evangelion"] .text-gray-600 { color: #7c6fad !important; }
+
+/* Primary accent: amber → violet */
+[data-theme="evangelion"] .text-amber-400    { color: #c084fc !important; }
+[data-theme="evangelion"] .text-amber-300    { color: #d8b4fe !important; }
+[data-theme="evangelion"] .bg-amber-400      { background-color: #9333ea !important; }
+[data-theme="evangelion"] .bg-amber-900\/50  { background-color: rgb(60 0 100 / 0.5) !important; }
+[data-theme="evangelion"] .bg-amber-900\/30  { background-color: rgb(60 0 100 / 0.3) !important; }
+[data-theme="evangelion"] .bg-amber-900\/20  { background-color: rgb(60 0 100 / 0.2) !important; }
+[data-theme="evangelion"] .border-amber-700\/50 { border-color: rgb(130 0 210 / 0.5) !important; }
+[data-theme="evangelion"] .border-amber-700\/40 { border-color: rgb(130 0 210 / 0.4) !important; }
+[data-theme="evangelion"] .border-amber-800\/30 { border-color: rgb(110 0 180 / 0.3) !important; }
+
+/* Secondary accent: teal → green */
+[data-theme="evangelion"] .text-teal-400     { color: #4ade80 !important; }
+[data-theme="evangelion"] .text-teal-300     { color: #86efac !important; }
+[data-theme="evangelion"] .text-teal-100     { color: #dcfce7 !important; }
+[data-theme="evangelion"] .bg-teal-600       { background-color: #16a34a !important; }
+[data-theme="evangelion"] .bg-teal-700       { background-color: #15803d !important; }
+[data-theme="evangelion"] .bg-teal-700\/80   { background-color: rgb(21 128 61 / 0.8) !important; }
+[data-theme="evangelion"] .bg-teal-900\/30   { background-color: rgb(0 60 20 / 0.3) !important; }
+[data-theme="evangelion"] .bg-teal-900\/20   { background-color: rgb(0 60 20 / 0.2) !important; }
+[data-theme="evangelion"] .border-teal-800\/40  { border-color: rgb(0 100 35 / 0.4) !important; }
+[data-theme="evangelion"] .border-teal-900\/30  { border-color: rgb(0 75 25 / 0.3) !important; }
+[data-theme="evangelion"] .text-teal-500     { color: #22c55e !important; }
+
+/* Hover — backgrounds */
+[data-theme="evangelion"] .hover\:bg-gray-800:hover   { background-color: #1a0038 !important; }
+[data-theme="evangelion"] .hover\:bg-gray-700:hover   { background-color: #260050 !important; }
+[data-theme="evangelion"] .hover\:text-gray-300:hover { color: #d8b4fe !important; }
+[data-theme="evangelion"] .hover\:text-gray-200:hover { color: #e9d5ff !important; }
+[data-theme="evangelion"] .hover\:bg-amber-900\/40:hover  { background-color: rgb(70 0 120 / 0.5) !important; }
+[data-theme="evangelion"] .hover\:text-amber-300:hover    { color: #d8b4fe !important; }
+[data-theme="evangelion"] .hover\:bg-teal-700:hover       { background-color: #166534 !important; }
+[data-theme="evangelion"] .hover\:bg-teal-900\/50:hover   { background-color: rgb(0 90 30 / 0.5) !important; }
+[data-theme="evangelion"] .hover\:text-teal-300:hover     { color: #86efac !important; }
+[data-theme="evangelion"] .hover\:bg-red-900\/40:hover    { background-color: rgb(80 0 40 / 0.4) !important; }
+[data-theme="evangelion"] .hover\:text-red-400:hover      { color: #f472b6 !important; }
+
+/* Active / selected */
+[data-theme="evangelion"] .bg-teal-600.text-white { background-color: #15803d !important; }
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TAILWIND OVERRIDES — HIGH CONTRAST
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Backgrounds */
+[data-theme="high-contrast"] .bg-gray-950    { background-color: #000000 !important; }
+[data-theme="high-contrast"] .bg-gray-900    { background-color: #050505 !important; }
+[data-theme="high-contrast"] .bg-gray-800    { background-color: #0f0f0f !important; }
+[data-theme="high-contrast"] .bg-gray-700    { background-color: #1a1a1a !important; }
+[data-theme="high-contrast"] .bg-gray-800\/40  { background-color: rgb(20 20 20 / 0.7) !important; }
+[data-theme="high-contrast"] .bg-gray-800\/50  { background-color: rgb(20 20 20 / 0.85) !important; }
+[data-theme="high-contrast"] .bg-gray-800\/60  { background-color: rgb(20 20 20 / 0.95) !important; }
+[data-theme="high-contrast"] .bg-gray-900\/50  { background-color: rgb(5 5 5 / 0.9) !important; }
+[data-theme="high-contrast"] .bg-black\/80     { background-color: rgb(0 0 0 / 0.92) !important; }
+
+/* Borders */
+[data-theme="high-contrast"] .border-gray-800 { border-color: #333333 !important; }
+[data-theme="high-contrast"] .border-gray-700 { border-color: #444444 !important; }
+[data-theme="high-contrast"] .border-gray-600 { border-color: #555555 !important; }
+[data-theme="high-contrast"] .border-gray-700\/40 { border-color: rgb(80 80 80 / 0.6) !important; }
+[data-theme="high-contrast"] .border-gray-800\/40 { border-color: rgb(60 60 60 / 0.5) !important; }
+
+/* Text */
+[data-theme="high-contrast"] .text-white    { color: #ffffff !important; }
+[data-theme="high-contrast"] .text-gray-200 { color: #f0f0f0 !important; }
+[data-theme="high-contrast"] .text-gray-300 { color: #e0e0e0 !important; }
+[data-theme="high-contrast"] .text-gray-400 { color: #c0c0c0 !important; }
+[data-theme="high-contrast"] .text-gray-500 { color: #a0a0a0 !important; }
+[data-theme="high-contrast"] .text-gray-600 { color: #777777 !important; }
+
+/* Primary accent: amber → yellow */
+[data-theme="high-contrast"] .text-amber-400    { color: #ffff00 !important; }
+[data-theme="high-contrast"] .text-amber-300    { color: #ffff55 !important; }
+[data-theme="high-contrast"] .bg-amber-400      { background-color: #cccc00 !important; }
+[data-theme="high-contrast"] .bg-amber-900\/50  { background-color: rgb(70 70 0 / 0.65) !important; }
+[data-theme="high-contrast"] .bg-amber-900\/30  { background-color: rgb(60 60 0 / 0.45) !important; }
+[data-theme="high-contrast"] .bg-amber-900\/20  { background-color: rgb(50 50 0 / 0.35) !important; }
+[data-theme="high-contrast"] .border-amber-700\/50 { border-color: rgb(200 200 0 / 0.65) !important; }
+[data-theme="high-contrast"] .border-amber-700\/40 { border-color: rgb(200 200 0 / 0.5) !important; }
+[data-theme="high-contrast"] .border-amber-800\/30 { border-color: rgb(180 180 0 / 0.4) !important; }
+
+/* Secondary accent: teal → cyan */
+[data-theme="high-contrast"] .text-teal-400     { color: #00ffff !important; }
+[data-theme="high-contrast"] .text-teal-300     { color: #66ffff !important; }
+[data-theme="high-contrast"] .text-teal-100     { color: #ccffff !important; }
+[data-theme="high-contrast"] .bg-teal-600       { background-color: #006666 !important; }
+[data-theme="high-contrast"] .bg-teal-700       { background-color: #005555 !important; }
+[data-theme="high-contrast"] .bg-teal-700\/80   { background-color: rgb(0 85 85 / 0.8) !important; }
+[data-theme="high-contrast"] .bg-teal-900\/30   { background-color: rgb(0 55 55 / 0.5) !important; }
+[data-theme="high-contrast"] .bg-teal-900\/20   { background-color: rgb(0 55 55 / 0.35) !important; }
+[data-theme="high-contrast"] .border-teal-800\/40  { border-color: rgb(0 110 110 / 0.55) !important; }
+[data-theme="high-contrast"] .border-teal-900\/30  { border-color: rgb(0 80 80 / 0.45) !important; }
+[data-theme="high-contrast"] .text-teal-500     { color: #00cccc !important; }
+
+/* Hovers */
+[data-theme="high-contrast"] .hover\:bg-gray-800:hover   { background-color: #1a1a1a !important; }
+[data-theme="high-contrast"] .hover\:bg-gray-700:hover   { background-color: #222222 !important; }
+[data-theme="high-contrast"] .hover\:text-gray-300:hover { color: #e0e0e0 !important; }
+[data-theme="high-contrast"] .hover\:text-gray-200:hover { color: #f0f0f0 !important; }
+[data-theme="high-contrast"] .hover\:bg-amber-900\/40:hover  { background-color: rgb(80 80 0 / 0.55) !important; }
+[data-theme="high-contrast"] .hover\:text-amber-300:hover    { color: #ffff55 !important; }
+[data-theme="high-contrast"] .hover\:bg-teal-700:hover       { background-color: #007777 !important; }
+[data-theme="high-contrast"] .hover\:bg-teal-900\/50:hover   { background-color: rgb(0 70 70 / 0.55) !important; }
+[data-theme="high-contrast"] .hover\:text-teal-300:hover     { color: #66ffff !important; }
+[data-theme="high-contrast"] .hover\:bg-red-900\/40:hover    { background-color: rgb(100 0 0 / 0.5) !important; }
+[data-theme="high-contrast"] .hover\:text-red-400:hover      { color: #ff6666 !important; }
