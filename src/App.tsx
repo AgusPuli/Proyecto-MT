@@ -16,7 +16,7 @@ import { getAllScales, BUILT_IN_SCALES, CHROMATIC_SCALE } from './data/scales'
 import { scaleRepository } from './data/storage'
 import { BUILT_IN_FINGERINGS, DEFAULT_FINGERING } from './data/fingerings'
 import { loadCustomFingeringPresets, saveCustomFingeringPreset, deleteCustomFingeringPreset } from './data/fingeringStorage'
-import type { ChordFilter, FingeringPreset, InstrumentType, LabelMode, NoteName, Scale } from './types'
+import type { ChordFilter, FingeringPreset, FretboardStyle, InstrumentType, LabelMode, NoteName, Scale } from './types'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Theme
@@ -67,6 +67,14 @@ export default function App() {
   // Custom tuning per instrument (null = use standard)
   const [customBassTuning, setCustomBassTuning] = useState<NoteName[] | null>(null)
   const [customGuitarTuning, setCustomGuitarTuning] = useState<NoteName[] | null>(null)
+  // Fretboard visual style ('classic' default, 'cyberpunk' optional)
+  const [fretboardStyle, setFretboardStyle] = useState<FretboardStyle>(
+    () => (localStorage.getItem('mt-fretboard-style') as FretboardStyle) ?? 'classic'
+  )
+
+  useEffect(() => {
+    localStorage.setItem('mt-fretboard-style', fretboardStyle)
+  }, [fretboardStyle])
 
   // ── Theme ────────────────────────────────────────────────────────────────
   const [theme, setTheme]           = useState<Theme>(() =>
@@ -344,9 +352,11 @@ export default function App() {
                   instrument={instrument}
                   tuning={currentTuning}
                   isStandardTuning={isStandardTuning}
+                  style={fretboardStyle}
                   onFretClick={handleFretClick}
                   onStringTuningChange={handleStringTuningChange}
                   onResetTuning={handleResetTuning}
+                  onStyleChange={setFretboardStyle}
                 />
                 <p className="mt-3 text-xs text-gray-600">Click any fret to set it as the root note.</p>
               </>

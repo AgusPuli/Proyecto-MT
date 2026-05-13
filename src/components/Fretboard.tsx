@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { BASS_TUNING, GUITAR_TUNING, CHROMATIC_NOTES, getNoteAtFret, NOTE_TO_SOLFEGE } from '../data/notes'
-import type { FretNote, LabelMode, NoteName, InstrumentType } from '../types'
+import type { FretNote, FretboardStyle, LabelMode, NoteName, InstrumentType } from '../types'
 
 interface FretboardProps {
   notes: FretNote[]
@@ -9,9 +9,11 @@ interface FretboardProps {
   instrument?: InstrumentType
   tuning?: NoteName[]
   isStandardTuning?: boolean
+  style?: FretboardStyle
   onFretClick: (string: number, fret: number, note: NoteName) => void
   onStringTuningChange?: (stringIdx: number, newNote: NoteName) => void
   onResetTuning?: () => void
+  onStyleChange?: (style: FretboardStyle) => void
 }
 
 // Fret markers per real guitar/bass convention
@@ -88,10 +90,13 @@ export default function Fretboard({
   instrument = 'bass',
   tuning: propTuning,
   isStandardTuning = true,
+  style = 'classic',
   onFretClick,
   onStringTuningChange,
   onResetTuning,
+  onStyleChange,
 }: FretboardProps) {
+  const isCyber = style === 'cyberpunk'
   const [zoom, setZoom] = useState(1.0)
   const [openDropdown, setOpenDropdown] = useState<number | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -142,10 +147,38 @@ export default function Fretboard({
   const strings     = Array.from({ length: tuning.length }, (_, i) => i)
 
   return (
-    <div className="select-none">
+    <div className={`select-none ${isCyber ? 'fretboard-cyber' : ''}`}>
 
-      {/* ── Top bar: zoom controls + tuning badge ─────────────────────────── */}
+      {/* ── Top bar: style toggle + zoom controls + tuning badge ─────────── */}
       <div className="flex items-center gap-2 mb-2 pr-1">
+
+        {/* Style toggle: Classic / Cyberpunk */}
+        {onStyleChange && (
+          <div className={`flex gap-0.5 rounded p-0.5 ${isCyber ? 'bg-black border border-cyan-500/40' : 'bg-gray-800'}`}>
+            <button
+              onClick={() => onStyleChange('classic')}
+              className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded transition-all ${
+                !isCyber
+                  ? 'bg-amber-600 text-white shadow-md'
+                  : 'text-gray-500 hover:text-gray-300'
+              }`}
+              title="Estilo clásico"
+            >
+              Clásico
+            </button>
+            <button
+              onClick={() => onStyleChange('cyberpunk')}
+              className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded transition-all ${
+                isCyber
+                  ? 'bg-gradient-to-r from-cyan-500 to-fuchsia-500 text-black shadow-md shadow-cyan-500/50'
+                  : 'text-gray-500 hover:text-gray-300'
+              }`}
+              title="Estilo cyberpunk"
+            >
+              ◢ Cyber
+            </button>
+          </div>
+        )}
 
         <div className="flex-1" />
 
@@ -191,21 +224,37 @@ export default function Fretboard({
         {onStringTuningChange && (
           <div className="flex items-center gap-1.5 ml-2">
             {isStandardTuning ? (
-              <span className="px-2.5 py-1 text-xs font-semibold rounded bg-teal-900/40 text-teal-300 border border-teal-700/40">
-                Afinación estándar
+              <span
+                className={`px-2.5 py-1 text-xs font-semibold rounded border ${
+                  isCyber
+                    ? 'fretboard-cyber-badge-standard uppercase tracking-wider'
+                    : 'bg-teal-900/40 text-teal-300 border-teal-700/40'
+                }`}
+              >
+                {isCyber ? '▣ TUNING.STD' : 'Afinación estándar'}
               </span>
             ) : (
               <>
-                <span className="px-2.5 py-1 text-xs font-semibold rounded bg-amber-900/40 text-amber-300 border border-amber-700/40">
-                  Afinación personalizada
+                <span
+                  className={`px-2.5 py-1 text-xs font-semibold rounded border ${
+                    isCyber
+                      ? 'fretboard-cyber-badge-custom uppercase tracking-wider'
+                      : 'bg-amber-900/40 text-amber-300 border-amber-700/40'
+                  }`}
+                >
+                  {isCyber ? '⚠ TUNING.CUSTOM' : 'Afinación personalizada'}
                 </span>
                 {onResetTuning && (
                   <button
                     onClick={onResetTuning}
-                    className="px-2 py-1 text-xs font-medium rounded bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-200 transition-colors"
+                    className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
+                      isCyber
+                        ? 'bg-black border border-orange-500/60 text-orange-400 hover:bg-orange-500/20 uppercase tracking-wider'
+                        : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-200'
+                    }`}
                     title="Restablecer a afinación estándar"
                   >
-                    Reset
+                    {isCyber ? '↺ RESET' : 'Reset'}
                   </button>
                 )}
               </>
