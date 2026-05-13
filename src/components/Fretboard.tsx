@@ -1,28 +1,37 @@
 import { useMemo, useState } from 'react'
-import { STANDARD_TUNING, getNoteAtFret, NOTE_TO_SOLFEGE } from '../data/notes'
-import type { FretNote, LabelMode, NoteName } from '../types'
-
-// TODO: Accept tuning as a prop when multi-tuning support lands.
+import { BASS_TUNING, GUITAR_TUNING, getNoteAtFret, NOTE_TO_SOLFEGE } from '../data/notes'
+import type { FretNote, LabelMode, NoteName, InstrumentType } from '../types'
 
 interface FretboardProps {
   notes: FretNote[]
   labelMode: LabelMode
   totalFrets?: number
+  instrument?: InstrumentType
   onFretClick: (string: number, fret: number, note: NoteName) => void
 }
 
-// Fret markers per real bass guitar convention
+// Fret markers per real guitar/bass convention
 const MARKER_FRETS    = new Set([3, 5, 7, 9, 12, 15, 17, 19, 21, 24])
 const DOUBLE_MARKERS  = new Set([12, 24])
 
-// String display order: 0 = G (top), 3 = E (bottom)
-const STRING_LABELS = ['G', 'D', 'A', 'E']
-
-// String line thickness (px): thinnest at top (G), thickest at bottom (E)
-const STRING_THICKNESS = [1, 2, 3, 4]
-
-// String line colours — slightly lighter for higher strings
-const STRING_COLORS = ['#b0b8c8', '#9099a8', '#707888', '#505868']
+// String configs by instrument
+const INSTRUMENT_CONFIG: Record<InstrumentType, { labels: string[]; thickness: number[]; colors: string[] }> = {
+  bass: {
+    labels: ['G', 'D', 'A', 'E'],
+    thickness: [1, 2, 3, 4],
+    colors: ['#b0b8c8', '#9099a8', '#707888', '#505868'],
+  },
+  guitar: {
+    labels: ['E', 'B', 'G', 'D', 'A', 'E'],
+    thickness: [1, 1.5, 2, 2.5, 3, 3.5],
+    colors: ['#d0d8e8', '#c0c8d8', '#b0b8c8', '#9099a8', '#707888', '#505868'],
+  },
+  piano: {
+    labels: [],
+    thickness: [],
+    colors: [],
+  },
+}
 
 // Base cell height — scaled by zoom at render time
 const BASE_CELL_H = 72
@@ -61,6 +70,7 @@ export default function Fretboard({
   notes,
   labelMode,
   totalFrets = 24,
+  instrument = 'bass',
   onFretClick,
 }: FretboardProps) {
   const [zoom, setZoom] = useState(1.0)
@@ -69,6 +79,10 @@ export default function Fretboard({
   const dotSize = Math.round(BASE_DOT_SIZE * zoom)
   const w       = (fret: number) => Math.round(getFretWidth(fret) * zoom)
 
+  // Get configuration for the selected instrument
+  const config = INSTRUMENT_CONFIG[instrument]
+  const tuning = instrument === 'guitar' ? GUITAR_TUNING : BASS_TUNING
+
   // O(1) note lookup by "stringNum-fret"
   const noteMap = useMemo(() => {
     const map = new Map<string, FretNote>()
@@ -76,14 +90,14 @@ export default function Fretboard({
     return map
   }, [notes])
 
-  // stringNum → STANDARD_TUNING index (string 0 = G = tuningIdx 3)
+  // stringNum → tuning index
   function openNoteForString(stringNum: number): NoteName {
-    const tuningIdx = (STANDARD_TUNING.length - 1) - stringNum
-    return STANDARD_TUNING[tuningIdx]
+    const tuningIdx = (tuning.length - 1) - stringNum
+    return tuning[tuningIdx]
   }
 
   const fretColumns = Array.from({ length: totalFrets }, (_, i) => i + 1)
-  const strings     = [0, 1, 2, 3]
+  const strings     = Array.from({ length: tuning.length }, (_, i) => i)
 
   return (
     <div className="select-none">
@@ -146,7 +160,7 @@ export default function Fretboard({
                   className="flex items-center justify-center font-bold text-gray-400"
                   style={{ height: cellH, fontSize: Math.round(14 * zoom) }}
                 >
-                  {STRING_LABELS[s]}
+                  {config.labels[s]}
                 </div>
               ))}
             </div>
@@ -164,8 +178,8 @@ export default function Fretboard({
                     stringIdx={s}
                     noteData={noteData}
                     labelMode={labelMode}
-                    thickness={STRING_THICKNESS[s]}
-                    color={STRING_COLORS[s]}
+                    thickness={config.thickness[s]}
+                    color={config.colors[s]}
                     cellH={cellH}
                     dotSize={dotSize}
                     zoom={zoom}
@@ -190,8 +204,8 @@ export default function Fretboard({
                       stringIdx={s}
                       noteData={noteData}
                       labelMode={labelMode}
-                      thickness={STRING_THICKNESS[s]}
-                      color={STRING_COLORS[s]}
+                      thickness={config.thickness[s]}
+                      color={config.colors[s]}
                       cellH={cellH}
                       dotSize={dotSize}
                       zoom={zoom}

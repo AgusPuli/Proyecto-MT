@@ -90,7 +90,7 @@ export default function Piano({ notes, labelMode, onNoteClick }: PianoProps) {
     if (!el) return
     const calc = () => {
       const avail = el.clientWidth - 32  // subtract px padding inside the panel
-      const w = Math.max(40, Math.floor((avail + GAP) / WHITE_KEYS.length) - GAP)
+      const w = Math.max(28, Math.floor((avail + GAP) / WHITE_KEYS.length) - GAP)
       setKeyW(w)
     }
     calc()
@@ -144,12 +144,12 @@ export default function Piano({ notes, labelMode, onNoteClick }: PianoProps) {
           <span className="ml-auto text-[10px] text-gray-600">C2 – C7 · Click para cambiar raíz</span>
         </div>
 
-        {/* Keys area — no scroll (fills width) */}
-        <div style={{ background: '#09090b', padding: '0 16px' }}>
+        {/* Keys area — scrollable on small screens */}
+        <div style={{ background: '#09090b', padding: '0 16px', overflowX: 'auto', overflowY: 'hidden' }}>
           {/* Top shadow */}
           <div style={{ height: 10, background: 'linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 100%)' }} />
 
-          {/* Keys container */}
+          {/* Keys container — scrollable if needed */}
           <div style={{ position: 'relative', width: totalW, height: wh }}>
 
             {/* White keys */}

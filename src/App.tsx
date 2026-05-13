@@ -11,12 +11,12 @@ import CustomScaleBuilder from './components/CustomScaleBuilder'
 import ScaleTones from './components/ScaleTones'
 import PracticeMode from './components/PracticeMode'
 import TabEditor from './components/TabEditor'
-import { computeFretboard } from './data/notes'
+import { computeFretboard, BASS_TUNING, GUITAR_TUNING } from './data/notes'
 import { getAllScales, BUILT_IN_SCALES, CHROMATIC_SCALE } from './data/scales'
 import { scaleRepository } from './data/storage'
 import { BUILT_IN_FINGERINGS, DEFAULT_FINGERING } from './data/fingerings'
 import { loadCustomFingeringPresets, saveCustomFingeringPreset, deleteCustomFingeringPreset } from './data/fingeringStorage'
-import type { ChordFilter, FingeringPreset, LabelMode, NoteName, Scale } from './types'
+import type { ChordFilter, FingeringPreset, InstrumentType, LabelMode, NoteName, Scale } from './types'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Theme
@@ -63,7 +63,8 @@ export default function App() {
   const [activeFingeringId, setActiveFingeringId] = useState<string>(DEFAULT_FINGERING.id)
   const [practiceOpen, setPracticeOpen] = useState(false)
   const [tabOpen, setTabOpen]       = useState(false)
-  const [showPiano, setShowPiano]   = useState(false)
+  const [instrument, setInstrument] = useState<InstrumentType>('bass')
+  const [showPiano, setShowPiano]   = useState(instrument === 'piano')
 
   // ── Theme ────────────────────────────────────────────────────────────────
   const [theme, setTheme]           = useState<Theme>(() =>
@@ -100,10 +101,16 @@ export default function App() {
   // ── Derived state ─────────────────────────────────────────────────────────
   const activeScale = showAllNotes ? CHROMATIC_SCALE : selectedScale
   const activeFingeringPreset = fingeringPresets.find(p => p.id === activeFingeringId)
+  const currentTuning = instrument === 'guitar' ? GUITAR_TUNING : BASS_TUNING
   const fretboardNotes = useMemo(
-    () => computeFretboard(root, activeScale, TOTAL_FRETS, chordFilter, activeFingeringPreset),
-    [root, activeScale, chordFilter, activeFingeringPreset],
+    () => computeFretboard(root, activeScale, TOTAL_FRETS, chordFilter, activeFingeringPreset, currentTuning),
+    [root, activeScale, chordFilter, activeFingeringPreset, instrument],
   )
+
+  // Update showPiano based on instrument
+  useEffect(() => {
+    setShowPiano(instrument === 'piano')
+  }, [instrument])
   const allScales = useMemo(() => getAllScales(customScales), [customScales])
 
   function handleFretClick(_string: number, _fret: number, note: NoteName) { setRoot(note) }
@@ -171,15 +178,24 @@ export default function App() {
           🎮 Práctica
         </button>
 
-        {/* Piano / Fretboard toggle */}
-        <button onClick={() => setShowPiano(!showPiano)}
-          className={`px-3 py-1.5 text-sm font-medium rounded transition-colors focus:outline-none ${
-            showPiano
-              ? 'bg-violet-700/80 text-violet-100 hover:bg-violet-700'
-              : 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-gray-200'
-          }`}>
-          {showPiano ? '🎹 Fretboard' : '🎹 Piano'}
-        </button>
+        {/* Instrument selector */}
+        <div className="flex gap-1 bg-gray-800 rounded p-0.5">
+          {['bass', 'guitar', 'piano'].map((inst) => (
+            <button
+              key={inst}
+              onClick={() => setInstrument(inst as InstrumentType)}
+              className={`px-2.5 py-1 text-xs font-semibold rounded transition-colors ${
+                instrument === inst
+                  ? inst === 'piano' ? 'bg-violet-600 text-white' :
+                    inst === 'guitar' ? 'bg-teal-600 text-white' :
+                    'bg-amber-600 text-white'
+                  : 'text-gray-400 hover:text-gray-300'
+              }`}
+              title={inst === 'bass' ? 'Bajo (4 cuerdas)' : inst === 'guitar' ? 'Guitarra (6 cuerdas)' : 'Piano'}>
+              {inst === 'bass' ? '🎸 Bajo' : inst === 'guitar' ? '🎸 Guitarra' : '🎹 Piano'}
+            </button>
+          ))}
+        </div>
 
         {/* Tabs */}
         <button onClick={() => setTabOpen(true)}
@@ -284,7 +300,7 @@ export default function App() {
         {/* Main */}
         <main className="flex-1 overflow-auto p-4 md:p-6 flex flex-col gap-6">
           <div>
-            {showPiano ? (
+            {instrument === 'piano' ? (
               <Piano
                 notes={fretboardNotes}
                 labelMode={labelMode}
@@ -296,6 +312,7 @@ export default function App() {
                   notes={fretboardNotes}
                   labelMode={labelMode}
                   totalFrets={TOTAL_FRETS}
+                  instrument={instrument}
                   onFretClick={handleFretClick}
                 />
                 <p className="mt-3 text-xs text-gray-600">Click any fret to set it as the root note.</p>

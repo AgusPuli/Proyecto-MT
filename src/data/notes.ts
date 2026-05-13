@@ -24,8 +24,14 @@ export const NOTE_TO_SOLFEGE: Record<NoteName, string> = {
 
 // Standard 4-string bass tuning (low to high)
 // index 0 = low E (displayed as string 3), index 3 = G (displayed as string 0)
-// TODO: Add alternate tunings (drop-D, 5-string, etc.) by swapping this array
-export const STANDARD_TUNING: NoteName[] = ['E', 'A', 'D', 'G']
+export const BASS_TUNING: NoteName[] = ['E', 'A', 'D', 'G']
+
+// Standard 6-string guitar tuning (low to high)
+// index 0 = low E, index 5 = high E
+export const GUITAR_TUNING: NoteName[] = ['E', 'A', 'D', 'G', 'B', 'E']
+
+// Kept for backward compatibility
+export const STANDARD_TUNING: NoteName[] = BASS_TUNING
 
 // Interval names in semitone order (index = semitones from root)
 export const ALL_INTERVALS: IntervalName[] = [
@@ -88,8 +94,6 @@ export function matchesChordFilter(interval: IntervalName, filter: ChordFilter):
  * Optionally filters by chord type (triads, sevenths).
  * Uses fingering preset to determine finger for each interval.
  * Pure function — safe to memoize.
- *
- * TODO: Support guitar/ukulele/5-string by passing a custom tuning array.
  */
 export function computeFretboard(
   root: NoteName,
@@ -97,15 +101,16 @@ export function computeFretboard(
   frets: number,
   chordFilter: ChordFilter = 'all',
   fingeringPreset?: FingeringPreset,
+  tuning: NoteName[] = BASS_TUNING,
 ): FretNote[] {
   const notes: FretNote[] = []
 
-  for (let tuningIdx = 0; tuningIdx < STANDARD_TUNING.length; tuningIdx++) {
+  for (let tuningIdx = 0; tuningIdx < tuning.length; tuningIdx++) {
     // Map from tuning index to display string number:
-    // tuningIdx 0 (low E) → string 3 (bottom of display)
-    // tuningIdx 3 (G)     → string 0 (top of display)
-    const stringNum = (STANDARD_TUNING.length - 1) - tuningIdx
-    const openNote = STANDARD_TUNING[tuningIdx]
+    // tuningIdx 0 (low E) → highest display string
+    // tuningIdx n (high) → string 0 (top of display)
+    const stringNum = (tuning.length - 1) - tuningIdx
+    const openNote = tuning[tuningIdx]
 
     for (let fret = 0; fret <= frets; fret++) {
       const note = getNoteAtFret(openNote, fret)
