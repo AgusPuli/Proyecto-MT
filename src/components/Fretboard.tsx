@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { BASS_TUNING, GUITAR_TUNING, getNoteAtFret, NOTE_TO_SOLFEGE } from '../data/notes'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { BASS_TUNING, GUITAR_TUNING, CHROMATIC_NOTES, getNoteAtFret, NOTE_TO_SOLFEGE } from '../data/notes'
 import type { FretNote, LabelMode, NoteName, InstrumentType } from '../types'
 
 interface FretboardProps {
@@ -7,30 +7,45 @@ interface FretboardProps {
   labelMode: LabelMode
   totalFrets?: number
   instrument?: InstrumentType
+  tuning?: NoteName[]
+  isStandardTuning?: boolean
   onFretClick: (string: number, fret: number, note: NoteName) => void
+  onStringTuningChange?: (stringIdx: number, newNote: NoteName) => void
+  onResetTuning?: () => void
 }
 
 // Fret markers per real guitar/bass convention
 const MARKER_FRETS    = new Set([3, 5, 7, 9, 12, 15, 17, 19, 21, 24])
 const DOUBLE_MARKERS  = new Set([12, 24])
 
-// String configs by instrument
-const INSTRUMENT_CONFIG: Record<InstrumentType, { labels: string[]; thickness: number[]; colors: string[] }> = {
+// String configs by instrument (thickness and colors only — labels come from tuning)
+const INSTRUMENT_CONFIG: Record<InstrumentType, { thickness: number[]; colors: string[] }> = {
   bass: {
-    labels: ['G', 'D', 'A', 'E'],
     thickness: [1, 2, 3, 4],
     colors: ['#b0b8c8', '#9099a8', '#707888', '#505868'],
   },
   guitar: {
-    labels: ['E', 'B', 'G', 'D', 'A', 'E'],
     thickness: [1, 1.5, 2, 2.5, 3, 3.5],
     colors: ['#d0d8e8', '#c0c8d8', '#b0b8c8', '#9099a8', '#707888', '#505868'],
   },
   piano: {
-    labels: [],
     thickness: [],
     colors: [],
   },
+}
+
+/**
+ * Returns chromatic notes starting from given note going DOWN (descending semitone).
+ * E.g. for 'E' returns: ['E', 'D#', 'D', 'C#', 'C', 'B', 'A#', 'A', 'G#', 'G', 'F#', 'F']
+ */
+function getNotesDescending(startNote: NoteName): NoteName[] {
+  const startIdx = CHROMATIC_NOTES.indexOf(startNote)
+  const result: NoteName[] = []
+  for (let i = 0; i < 12; i++) {
+    const idx = ((startIdx - i) % 12 + 12) % 12
+    result.push(CHROMATIC_NOTES[idx])
+  }
+  return result
 }
 
 // Base cell height — scaled by zoom at render time
@@ -71,9 +86,15 @@ export default function Fretboard({
   labelMode,
   totalFrets = 24,
   instrument = 'bass',
+  tuning: propTuning,
+  isStandardTuning = true,
   onFretClick,
+  onStringTuningChange,
+  onResetTuning,
 }: FretboardProps) {
   const [zoom, setZoom] = useState(1.0)
+  const [openDropdown, setOpenDropdown] = useState<number | null>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   const cellH   = Math.round(BASE_CELL_H * zoom)
   const dotSize = Math.round(BASE_DOT_SIZE * zoom)
@@ -81,7 +102,17 @@ export default function Fretboard({
 
   // Get configuration for the selected instrument
   const config = INSTRUMENT_CONFIG[instrument]
-  const tuning = instrument === 'guitar' ? GUITAR_TUNING : BASS_TUNING
+  const tuning = propTuning ?? (instrument === 'guitar' ? GUITAR_TUNING : BASS_TUNING)
+
+  // Build labels array from current tuning (display order: top = highest string)
+  // tuning[0] = lowest, tuning[length-1] = highest
+  // display string 0 (top) corresponds to tuning[length-1] (highest)
+  const labels = useMemo(() => {
+    return Array.from({ length: tuning.length }, (_, displayIdx) => {
+      const tuningIdx = (tuning.length - 1) - displayIdx
+      return tuning[tuningIdx]
+    })
+  }, [tuning])
 
   // O(1) note lookup by "stringNum-fret"
   const noteMap = useMemo(() => {
@@ -96,14 +127,29 @@ export default function Fretboard({
     return tuning[tuningIdx]
   }
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function onOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpenDropdown(null)
+      }
+    }
+    if (openDropdown !== null) document.addEventListener('mousedown', onOutside)
+    return () => document.removeEventListener('mousedown', onOutside)
+  }, [openDropdown])
+
   const fretColumns = Array.from({ length: totalFrets }, (_, i) => i + 1)
   const strings     = Array.from({ length: tuning.length }, (_, i) => i)
 
   return (
     <div className="select-none">
 
-      {/* ── Zoom controls ──────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-end gap-1 mb-2 pr-1">
+      {/* ── Top bar: zoom controls + tuning badge ─────────────────────────── */}
+      <div className="flex items-center gap-2 mb-2 pr-1">
+
+        <div className="flex-1" />
+
+        {/* Zoom controls */}
         <button
           onClick={() => setZoom(z => Math.max(ZOOM_MIN, Math.round((z - ZOOM_STEP) * 100) / 100))}
           disabled={zoom <= ZOOM_MIN}
@@ -140,6 +186,32 @@ export default function Fretboard({
             <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
           </svg>
         </button>
+
+        {/* Tuning status badge — top right */}
+        {onStringTuningChange && (
+          <div className="flex items-center gap-1.5 ml-2">
+            {isStandardTuning ? (
+              <span className="px-2.5 py-1 text-xs font-semibold rounded bg-teal-900/40 text-teal-300 border border-teal-700/40">
+                Afinación estándar
+              </span>
+            ) : (
+              <>
+                <span className="px-2.5 py-1 text-xs font-semibold rounded bg-amber-900/40 text-amber-300 border border-amber-700/40">
+                  Afinación personalizada
+                </span>
+                {onResetTuning && (
+                  <button
+                    onClick={onResetTuning}
+                    className="px-2 py-1 text-xs font-medium rounded bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-200 transition-colors"
+                    title="Restablecer a afinación estándar"
+                  >
+                    Reset
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ── Fretboard ──────────────────────────────────────────────────────── */}
@@ -149,20 +221,76 @@ export default function Fretboard({
           {/* ── Fretboard body ───────────────────────────────────────────────── */}
           <div className="flex rounded-t overflow-hidden border border-amber-900/60">
 
-            {/* String-name labels */}
+            {/* String-name labels (with tuning dropdown) */}
             <div
-              className="flex flex-col flex-shrink-0 bg-gray-900 border-r border-gray-700 z-10"
-              style={{ width: Math.round(36 * zoom) }}
+              ref={dropdownRef}
+              className="flex flex-col flex-shrink-0 bg-gray-900 border-r border-gray-700 relative"
+              style={{ width: Math.round(44 * zoom), zIndex: 20 }}
             >
-              {strings.map(s => (
-                <div
-                  key={s}
-                  className="flex items-center justify-center font-bold text-gray-400"
-                  style={{ height: cellH, fontSize: Math.round(14 * zoom) }}
-                >
-                  {config.labels[s]}
-                </div>
-              ))}
+              {strings.map(s => {
+                const currentNote = labels[s]
+                const isOpen = openDropdown === s
+                const descendingNotes = getNotesDescending(currentNote)
+
+                return (
+                  <div
+                    key={s}
+                    className="relative flex items-center justify-center"
+                    style={{ height: cellH }}
+                  >
+                    <button
+                      onClick={() => {
+                        if (onStringTuningChange) {
+                          setOpenDropdown(isOpen ? null : s)
+                        }
+                      }}
+                      disabled={!onStringTuningChange}
+                      className={`flex items-center gap-0.5 px-1.5 py-1 rounded font-bold transition-colors ${
+                        onStringTuningChange
+                          ? 'text-gray-200 hover:bg-gray-700 cursor-pointer'
+                          : 'text-gray-400 cursor-default'
+                      }`}
+                      style={{ fontSize: Math.round(14 * zoom) }}
+                      title={onStringTuningChange ? 'Cambiar afinación' : undefined}
+                    >
+                      <span>{currentNote}</span>
+                      {onStringTuningChange && (
+                        <svg className="w-2.5 h-2.5 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
+                    </button>
+
+                    {/* Dropdown menu */}
+                    {isOpen && onStringTuningChange && (
+                      <div
+                        className="absolute left-full ml-1 top-1/2 -translate-y-1/2 bg-gray-900 border border-gray-700 rounded-lg shadow-2xl overflow-hidden"
+                        style={{ zIndex: 50, minWidth: 70, maxHeight: 320, overflowY: 'auto' }}
+                      >
+                        <div className="text-[9px] text-gray-600 uppercase tracking-widest font-semibold px-2 pt-1.5 pb-0.5 sticky top-0 bg-gray-900">
+                          Afinar a
+                        </div>
+                        {descendingNotes.map(note => (
+                          <button
+                            key={note}
+                            onClick={() => {
+                              onStringTuningChange(s, note)
+                              setOpenDropdown(null)
+                            }}
+                            className={`w-full text-left px-3 py-1.5 text-sm font-semibold transition-colors ${
+                              note === currentNote
+                                ? 'bg-amber-900/40 text-amber-300'
+                                : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                            }`}
+                          >
+                            {note}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
 
             {/* Fret 0 — open strings; right border = NUT */}
@@ -220,7 +348,7 @@ export default function Fretboard({
           {/* ── Fret markers + numbers ───────────────────────────────────────── */}
           <div className="flex bg-gray-900/80 rounded-b border-x border-b border-amber-900/30">
             {/* Spacer: string-name column */}
-            <div className="flex-shrink-0" style={{ width: Math.round(36 * zoom) }} />
+            <div className="flex-shrink-0" style={{ width: Math.round(44 * zoom) }} />
             {/* Spacer: fret-0 column */}
             <div className="flex-shrink-0" style={{ width: w(0) }} />
 

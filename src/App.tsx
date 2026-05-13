@@ -64,7 +64,9 @@ export default function App() {
   const [practiceOpen, setPracticeOpen] = useState(false)
   const [tabOpen, setTabOpen]       = useState(false)
   const [instrument, setInstrument] = useState<InstrumentType>('bass')
-  const [showPiano, setShowPiano]   = useState(instrument === 'piano')
+  // Custom tuning per instrument (null = use standard)
+  const [customBassTuning, setCustomBassTuning] = useState<NoteName[] | null>(null)
+  const [customGuitarTuning, setCustomGuitarTuning] = useState<NoteName[] | null>(null)
 
   // ── Theme ────────────────────────────────────────────────────────────────
   const [theme, setTheme]           = useState<Theme>(() =>
@@ -101,16 +103,43 @@ export default function App() {
   // ── Derived state ─────────────────────────────────────────────────────────
   const activeScale = showAllNotes ? CHROMATIC_SCALE : selectedScale
   const activeFingeringPreset = fingeringPresets.find(p => p.id === activeFingeringId)
-  const currentTuning = instrument === 'guitar' ? GUITAR_TUNING : BASS_TUNING
+  const standardTuning = instrument === 'guitar' ? GUITAR_TUNING : BASS_TUNING
+  const customTuning = instrument === 'guitar' ? customGuitarTuning : customBassTuning
+  const currentTuning = customTuning ?? standardTuning
+  // Check if current tuning matches standard
+  const isStandardTuning = !customTuning || customTuning.every((n, i) => n === standardTuning[i])
+
   const fretboardNotes = useMemo(
     () => computeFretboard(root, activeScale, TOTAL_FRETS, chordFilter, activeFingeringPreset, currentTuning),
-    [root, activeScale, chordFilter, activeFingeringPreset, instrument],
+    [root, activeScale, chordFilter, activeFingeringPreset, instrument, customTuning],
   )
 
-  // Update showPiano based on instrument
-  useEffect(() => {
-    setShowPiano(instrument === 'piano')
-  }, [instrument])
+  // Handler to change a single string's tuning
+  function handleStringTuningChange(stringIdx: number, newNote: NoteName) {
+    // stringIdx in display order: 0 = top (highest), N-1 = bottom (lowest)
+    // Tuning array is reversed: tuning[0] = lowest, tuning[N-1] = highest
+    const tuningIdx = (currentTuning.length - 1) - stringIdx
+    const newTuning = [...currentTuning] as NoteName[]
+    newTuning[tuningIdx] = newNote
+
+    // Check if new tuning matches standard (would reset to null)
+    const matchesStandard = newTuning.every((n, i) => n === standardTuning[i])
+
+    if (instrument === 'guitar') {
+      setCustomGuitarTuning(matchesStandard ? null : newTuning)
+    } else {
+      setCustomBassTuning(matchesStandard ? null : newTuning)
+    }
+  }
+
+  // Handler to reset tuning to standard
+  function handleResetTuning() {
+    if (instrument === 'guitar') {
+      setCustomGuitarTuning(null)
+    } else {
+      setCustomBassTuning(null)
+    }
+  }
   const allScales = useMemo(() => getAllScales(customScales), [customScales])
 
   function handleFretClick(_string: number, _fret: number, note: NoteName) { setRoot(note) }
@@ -313,7 +342,11 @@ export default function App() {
                   labelMode={labelMode}
                   totalFrets={TOTAL_FRETS}
                   instrument={instrument}
+                  tuning={currentTuning}
+                  isStandardTuning={isStandardTuning}
                   onFretClick={handleFretClick}
+                  onStringTuningChange={handleStringTuningChange}
+                  onResetTuning={handleResetTuning}
                 />
                 <p className="mt-3 text-xs text-gray-600">Click any fret to set it as the root note.</p>
               </>

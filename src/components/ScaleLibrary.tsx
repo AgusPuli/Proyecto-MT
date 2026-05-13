@@ -9,6 +9,17 @@ interface ScaleLibraryProps {
   onDelete: (id: string) => void
 }
 
+// Nota de inicio de cada modo (relativo a la escala mayor de Do)
+const MODE_NOTE: Record<string, string> = {
+  'major':      'Do',   // Ionian — grado 1
+  'dorian':     'Re',   // grado 2
+  'phrygian':   'Mi',   // grado 3
+  'lydian':     'Fa',   // grado 4
+  'mixolydian': 'Sol',  // grado 5
+  'aeolian':    'La',   // grado 6
+  'locrian':    'Si',   // grado 7
+}
+
 export default function ScaleLibrary({
   scales,
   activeScaleId,
@@ -89,6 +100,11 @@ export default function ScaleLibrary({
                       >
                         <span className={isActive ? 'text-teal-300 font-medium' : 'text-gray-300'}>
                           {scale.name}
+                          {MODE_NOTE[scale.id] !== undefined && (
+                            <span className={`ml-1.5 font-semibold ${isActive ? 'text-teal-400/80' : 'text-gray-500'}`}>
+                              ({MODE_NOTE[scale.id]})
+                            </span>
+                          )}
                         </span>
                       </button>
 
