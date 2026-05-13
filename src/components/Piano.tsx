@@ -16,9 +16,9 @@ const B_H  = 100   // black key height
 const GAP  = 2     // gap between white keys
 const STEP = W_W + GAP   // one white-key stride
 
-// ─── Piano range: C1 → C8 (50 white keys) ────────────────────────────────────
-const OCTAVE_START = 1
-const OCTAVE_END   = 8
+// ─── Piano range: C2 → C7 (36 white keys, 5 octaves) ─────────────────────────
+const OCTAVE_START = 2
+const OCTAVE_END   = 7
 
 const ALL_NOTES: NoteName[] = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B']
 const IS_WHITE   = new Set<NoteName>(['C','D','E','F','G','A','B'])
@@ -134,7 +134,7 @@ export default function Piano({ notes, labelMode, onNoteClick }: PianoProps) {
         <div className="px-4 py-2.5 border-b border-gray-800 flex items-center gap-2">
           <span className="text-sm">🎹</span>
           <span className="text-xs text-gray-400 font-semibold tracking-widest uppercase">Piano</span>
-          <span className="ml-auto text-[10px] text-gray-600">C1 – C8 · Click para cambiar raíz</span>
+          <span className="ml-auto text-[10px] text-gray-600">C2 – C7 · Click para cambiar raíz</span>
         </div>
 
         {/* Scrollable keys area */}
