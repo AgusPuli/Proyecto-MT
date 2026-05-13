@@ -71,29 +71,30 @@ const TOTAL_W = WHITE_KEYS.length * STEP - GAP  // total piano width
 
 // ─── Visual helpers ───────────────────────────────────────────────────────────
 
+// Root = electric blue. Scale white = golden amber. Scale black = teal. Plain = white/dark.
 function whiteKeyGradient(inScale: boolean, isRoot: boolean, hov: boolean): string {
-  if (isRoot)    return 'linear-gradient(170deg, #fbbf24 0%, #f59e0b 60%, #d97706 100%)'
-  if (inScale)   return 'linear-gradient(170deg, #fef3c7 0%, #fde68a 50%, #fbbf24 100%)'
-  if (hov)       return 'linear-gradient(170deg, #f3f4f6 0%, #e5e7eb 100%)'
-  return           'linear-gradient(170deg, #f9fafb 0%, #ffffff 20%, #e5e7eb 85%, #d1d5db 100%)'
+  if (isRoot)  return 'linear-gradient(170deg, #93c5fd 0%, #3b82f6 55%, #1d4ed8 100%)'
+  if (inScale) return 'linear-gradient(170deg, #fef3c7 0%, #fde68a 50%, #fbbf24 100%)'
+  if (hov)     return 'linear-gradient(170deg, #f3f4f6 0%, #e5e7eb 100%)'
+  return         'linear-gradient(170deg, #f9fafb 0%, #ffffff 20%, #e5e7eb 85%, #d1d5db 100%)'
 }
 
 function blackKeyGradient(inScale: boolean, isRoot: boolean, hov: boolean): string {
-  if (isRoot)    return 'linear-gradient(170deg, #0d9488 0%, #0f766e 50%, #134e4a 100%)'
-  if (inScale)   return 'linear-gradient(170deg, #2dd4bf 0%, #14b8a6 40%, #0d9488 70%, #115e59 100%)'
-  if (hov)       return 'linear-gradient(170deg, #6b7280 0%, #4b5563 40%, #374151 100%)'
-  return           'linear-gradient(170deg, #52525b 0%, #3f3f46 20%, #27272a 55%, #18181b 80%, #09090b 100%)'
+  if (isRoot)  return 'linear-gradient(170deg, #60a5fa 0%, #2563eb 50%, #1e3a8a 100%)'
+  if (inScale) return 'linear-gradient(170deg, #2dd4bf 0%, #14b8a6 40%, #0d9488 70%, #115e59 100%)'
+  if (hov)     return 'linear-gradient(170deg, #6b7280 0%, #4b5563 40%, #374151 100%)'
+  return         'linear-gradient(170deg, #52525b 0%, #3f3f46 20%, #27272a 55%, #18181b 80%, #09090b 100%)'
 }
 
 function whiteKeyBorder(inScale: boolean, isRoot: boolean): string {
-  if (isRoot)  return '#b45309'
+  if (isRoot)  return '#1d4ed8'
   if (inScale) return '#d97706'
   return '#9ca3af'
 }
 
 function blackKeyShadow(inScale: boolean, isRoot: boolean): string {
   const base = '2px 6px 14px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.12)'
-  if (isRoot)  return `${base}, 0 0 16px rgba(20,184,166,0.6)`
+  if (isRoot)  return `${base}, 0 0 18px rgba(59,130,246,0.7)`
   if (inScale) return `${base}, 0 0 10px rgba(20,184,166,0.35)`
   return base
 }
@@ -110,8 +111,18 @@ export default function Piano({ notes, labelMode, onNoteClick }: PianoProps) {
     return m
   }, [notes])
 
-  function label(note: NoteName) {
-    return labelMode === 'solfege' ? NOTE_TO_SOLFEGE[note] : note
+  function label(note: NoteName, fd?: FretNote): string {
+    if (!fd) {
+      // note not in scale — only note/solfege make sense
+      return labelMode === 'solfege' ? NOTE_TO_SOLFEGE[note] : note
+    }
+    switch (labelMode) {
+      case 'solfege':  return NOTE_TO_SOLFEGE[note]
+      case 'interval': return fd.interval   // e.g. "b3", "5", "b7"
+      case 'degree':   return fd.degree     // e.g. "I", "III", "V"
+      case 'finger':   return note          // fingers don't apply to piano
+      default:         return note
+    }
   }
 
   return (
@@ -190,10 +201,10 @@ export default function Piano({ notes, labelMode, onNoteClick }: PianoProps) {
                   <span style={{
                     fontSize: 11,
                     fontWeight: (isRoot || inScale) ? 700 : 500,
-                    color: isRoot ? '#92400e' : inScale ? '#78350f' : '#9ca3af',
+                    color: isRoot ? '#dbeafe' : inScale ? '#78350f' : '#9ca3af',
                     letterSpacing: '0.03em',
                   }}>
-                    {label(k.note)}
+                    {label(k.note, fd)}
                   </span>
                 </div>
               )
@@ -251,14 +262,14 @@ export default function Piano({ notes, labelMode, onNoteClick }: PianoProps) {
                   <span style={{
                     fontSize: 8.5,
                     fontWeight: 700,
-                    color: isRoot ? '#99f6e4' : inScale ? '#5eead4' : '#52525b',
+                    color: isRoot ? '#bfdbfe' : inScale ? '#5eead4' : '#52525b',
                     writingMode: 'vertical-lr',
                     textOrientation: 'mixed',
                     transform: 'rotate(180deg)',
                     letterSpacing: '0.04em',
                     lineHeight: 1,
                   }}>
-                    {label(k.note)}
+                    {label(k.note, fd)}
                   </span>
                 </div>
               )
