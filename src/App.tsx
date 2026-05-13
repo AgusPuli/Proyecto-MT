@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Fretboard from './components/Fretboard'
+import Piano from './components/Piano'
 import CircleOfFifths from './components/CircleOfFifths'
 import LabelToggle from './components/LabelToggle'
 import RootSelector from './components/RootSelector'
@@ -62,6 +63,7 @@ export default function App() {
   const [activeFingeringId, setActiveFingeringId] = useState<string>(DEFAULT_FINGERING.id)
   const [practiceOpen, setPracticeOpen] = useState(false)
   const [tabOpen, setTabOpen]       = useState(false)
+  const [showPiano, setShowPiano]   = useState(false)
 
   // ── Theme ────────────────────────────────────────────────────────────────
   const [theme, setTheme]           = useState<Theme>(() =>
@@ -169,6 +171,16 @@ export default function App() {
           🎮 Práctica
         </button>
 
+        {/* Piano / Fretboard toggle */}
+        <button onClick={() => setShowPiano(!showPiano)}
+          className={`px-3 py-1.5 text-sm font-medium rounded transition-colors focus:outline-none ${
+            showPiano
+              ? 'bg-violet-700/80 text-violet-100 hover:bg-violet-700'
+              : 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-gray-200'
+          }`}>
+          {showPiano ? '🎹 Fretboard' : '🎹 Piano'}
+        </button>
+
         {/* Tabs */}
         <button onClick={() => setTabOpen(true)}
           className="px-3 py-1.5 text-sm font-medium rounded bg-gray-800 text-gray-300 hover:bg-teal-900/50 hover:text-teal-300 transition-colors focus:outline-none">
@@ -272,13 +284,23 @@ export default function App() {
         {/* Main */}
         <main className="flex-1 overflow-auto p-4 md:p-6 flex flex-col gap-6">
           <div>
-            <Fretboard
-              notes={fretboardNotes}
-              labelMode={labelMode}
-              totalFrets={TOTAL_FRETS}
-              onFretClick={handleFretClick}
-            />
-            <p className="mt-3 text-xs text-gray-600">Click any fret to set it as the root note.</p>
+            {showPiano ? (
+              <Piano
+                notes={fretboardNotes}
+                labelMode={labelMode}
+                onNoteClick={(note) => handleFretClick(0, 0, note)}
+              />
+            ) : (
+              <>
+                <Fretboard
+                  notes={fretboardNotes}
+                  labelMode={labelMode}
+                  totalFrets={TOTAL_FRETS}
+                  onFretClick={handleFretClick}
+                />
+                <p className="mt-3 text-xs text-gray-600">Click any fret to set it as the root note.</p>
+              </>
+            )}
             <ScaleTones root={root} scale={selectedScale} />
           </div>
 
