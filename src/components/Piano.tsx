@@ -59,7 +59,7 @@ function whiteGrad(inScale: boolean, isRoot: boolean, hov: boolean) {
 
 function blackGrad(inScale: boolean, isRoot: boolean, hov: boolean) {
   if (isRoot)  return 'linear-gradient(175deg, #60a5fa 0%, #2563eb 50%, #1e3a8a 100%)'
-  if (inScale) return 'linear-gradient(175deg, #2dd4bf 0%, #14b8a6 40%, #0d9488 70%, #115e59 100%)'
+  if (inScale) return 'linear-gradient(175deg, #fde68a 0%, #fbbf24 40%, #d97706 70%, #92400e 100%)'
   if (hov)     return 'linear-gradient(175deg, #6b7280 0%, #4b5563 40%, #374151 100%)'
   return         'linear-gradient(175deg, #52525b 0%, #3f3f46 20%, #27272a 55%, #18181b 80%, #09090b 100%)'
 }
@@ -73,7 +73,7 @@ function whiteBorder(inScale: boolean, isRoot: boolean) {
 function blackShadow(inScale: boolean, isRoot: boolean) {
   const base = '2px 6px 14px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.12)'
   if (isRoot)  return `${base}, 0 0 18px rgba(59,130,246,0.7)`
-  if (inScale) return `${base}, 0 0 10px rgba(20,184,166,0.35)`
+  if (inScale) return `${base}, 0 0 10px rgba(251,191,36,0.5)`
   return base
 }
 
@@ -228,7 +228,7 @@ export default function Piano({ notes, labelMode, onNoteClick }: PianoProps) {
                     zIndex: 3,
                     background: blackGrad(inScale, isRoot, hov),
                     borderRadius: '0 0 6px 6px',
-                    border: `1px solid ${isRoot ? '#1d4ed8' : inScale ? '#0f766e' : '#000'}`,
+                    border: `1px solid ${isRoot ? '#1d4ed8' : inScale ? '#b45309' : '#000'}`,
                     borderTop: 'none',
                     cursor: 'pointer',
                     boxShadow: blackShadow(inScale, isRoot),
@@ -250,7 +250,7 @@ export default function Piano({ notes, labelMode, onNoteClick }: PianoProps) {
                   <span style={{
                     fontSize: bFontSize,
                     fontWeight: 700,
-                    color: isRoot ? '#bfdbfe' : inScale ? '#5eead4' : '#52525b',
+                    color: isRoot ? '#bfdbfe' : inScale ? '#78350f' : '#52525b',
                     writingMode: 'vertical-lr',
                     transform: 'rotate(180deg)',
                     letterSpacing: '0.04em',
@@ -271,8 +271,7 @@ export default function Piano({ notes, labelMode, onNoteClick }: PianoProps) {
       {/* Legend */}
       <div className="flex flex-wrap gap-4 text-[11px] text-gray-500 px-1">
         {[
-          { grad: 'linear-gradient(170deg,#fef3c7,#fbbf24)', border: '#d97706', w: 20, label: 'Escala (blanca)' },
-          { grad: 'linear-gradient(170deg,#2dd4bf,#0d9488)',  border: '#0f766e', w: 14, label: 'Escala (negra)' },
+          { grad: 'linear-gradient(170deg,#fef3c7,#fbbf24)', border: '#d97706', w: 20, label: 'Escala' },
           { grad: 'linear-gradient(170deg,#93c5fd,#3b82f6)',  border: '#1d4ed8', w: 20, label: 'Raíz' },
         ].map(l => (
           <div key={l.label} className="flex items-center gap-1.5">
