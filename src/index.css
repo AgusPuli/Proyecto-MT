@@ -15,196 +15,171 @@ html, body, #root {
    Applied only when .fretboard-cyber class is present (toggle in Fretboard.tsx)
    ───────────────────────────────────────────────────────────────────────────── */
 
+/* MAGI palette — used by both .fretboard-cyber and .cyber-ui */
+:root {
+  --magi-green:    #6b9560;   /* verde MAGI fosfórico apagado */
+  --magi-green-2:  #4d7848;   /* verde más oscuro */
+  --magi-orange:   #c97a3a;   /* ámbar CRT antiguo */
+  --magi-orange-2: #a85f2a;   /* ámbar más oscuro */
+  --magi-red:      #b84030;   /* rojo MAGI alerta */
+  --magi-cyan:     #5b8a9a;   /* turquesa apagado, detalles */
+  --magi-bg:       #000000;   /* negro profundo */
+  --magi-bg-2:     #050709;   /* casi negro */
+  --magi-panel:    #0a0e10;   /* panel oscuro */
+  --magi-grid:     rgba(107, 149, 96, 0.06);
+  --magi-border:   rgba(107, 149, 96, 0.35);
+  --magi-border-orange: rgba(201, 122, 58, 0.4);
+}
+
 .fretboard-cyber {
-  --cyber-cyan:     #00f0ff;
-  --cyber-magenta:  #ff00aa;
-  --cyber-green:    #00ff88;
-  --cyber-orange:   #ff6a00;
-  --cyber-bg:       #03060d;
-  --cyber-panel:    #0a0e1a;
-  --cyber-grid:     #0d1a2e;
-  --cyber-border:   rgba(0, 240, 255, 0.4);
   font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
 }
 
 /* ── Main fretboard body container ── */
 .fretboard-cyber .flex.rounded-t.overflow-hidden {
-  border-color: var(--cyber-cyan) !important;
+  border-color: var(--magi-border) !important;
   border-width: 1px;
   box-shadow:
-    0 0 0 1px rgba(0, 240, 255, 0.2),
-    0 0 24px rgba(0, 240, 255, 0.25),
-    inset 0 0 60px rgba(0, 240, 255, 0.05);
-  background: var(--cyber-bg);
-  border-radius: 4px !important;
+    inset 0 0 40px rgba(107, 149, 96, 0.04);
+  background: var(--magi-bg);
+  border-radius: 2px !important;
 }
 
 /* ── String label column ── */
 .fretboard-cyber .flex.flex-col.flex-shrink-0.bg-gray-900.border-r.border-gray-700 {
-  background: linear-gradient(180deg, #050810 0%, #0a0e1a 100%) !important;
-  border-right-color: var(--cyber-cyan) !important;
-  box-shadow: inset -1px 0 8px rgba(0, 240, 255, 0.3);
+  background: var(--magi-bg) !important;
+  border-right-color: var(--magi-border) !important;
 }
 
 /* ── String label buttons (tuning dropdown) ── */
 .fretboard-cyber .flex.flex-col.flex-shrink-0.bg-gray-900.border-r.border-gray-700 button {
-  color: var(--cyber-cyan) !important;
-  text-shadow: 0 0 6px rgba(0, 240, 255, 0.7);
+  color: var(--magi-green) !important;
   letter-spacing: 0.05em;
 }
 
 .fretboard-cyber .flex.flex-col.flex-shrink-0.bg-gray-900.border-r.border-gray-700 button:hover:not(:disabled) {
-  background: rgba(0, 240, 255, 0.1) !important;
-  color: #fff !important;
-  text-shadow: 0 0 10px var(--cyber-cyan);
+  background: rgba(107, 149, 96, 0.08) !important;
+  color: #b8d4ad !important;
 }
 
 /* ── Fret cells background (the wooden brown amber-950) ── */
 .fretboard-cyber .bg-amber-950 {
-  background: var(--cyber-panel) !important;
+  background: var(--magi-panel) !important;
   background-image:
-    linear-gradient(rgba(0, 240, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 240, 255, 0.04) 1px, transparent 1px) !important;
-  background-size: 12px 12px !important;
+    linear-gradient(var(--magi-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--magi-grid) 1px, transparent 1px) !important;
+  background-size: 14px 14px !important;
 }
 
 /* ── NUT (the thick border at fret 0) ── */
 .fretboard-cyber .border-r-4.border-gray-300 {
-  border-right-color: var(--cyber-cyan) !important;
-  box-shadow: 4px 0 12px rgba(0, 240, 255, 0.5);
+  border-right-color: var(--magi-orange) !important;
+  opacity: 0.8;
 }
 
 /* ── Fret column borders ── */
 .fretboard-cyber .border-r.border-gray-600\/70 {
-  border-right-color: rgba(0, 240, 255, 0.15) !important;
+  border-right-color: rgba(107, 149, 96, 0.12) !important;
 }
 
 /* ── Hover state on fret cells ── */
 .fretboard-cyber .hover\:bg-amber-800\/20:hover {
-  background-color: rgba(0, 240, 255, 0.08) !important;
+  background-color: rgba(107, 149, 96, 0.05) !important;
 }
 
 /* ── Fret markers (the dots below) ── */
 .fretboard-cyber .bg-gray-900\/80 {
-  background: var(--cyber-bg) !important;
-  border-color: var(--cyber-cyan) !important;
-  border-top: 1px solid rgba(0, 240, 255, 0.2);
+  background: var(--magi-bg) !important;
+  border-color: var(--magi-border) !important;
+  border-top: 1px solid rgba(107, 149, 96, 0.18);
 }
 
 .fretboard-cyber .bg-gray-900\/80 .bg-gray-500 {
-  background: var(--cyber-cyan) !important;
-  box-shadow: 0 0 6px var(--cyber-cyan);
+  background: var(--magi-green) !important;
+  opacity: 0.75;
 }
 
 .fretboard-cyber .bg-gray-900\/80 .text-gray-600 {
-  color: var(--cyber-cyan) !important;
-  opacity: 0.7;
-  text-shadow: 0 0 4px rgba(0, 240, 255, 0.5);
+  color: var(--magi-green) !important;
+  opacity: 0.6;
   font-family: inherit;
 }
 
 /* ── NOTE DOTS — the colored circles showing scale notes ── */
 
-/* Non-root notes (teal background → magenta with glow) */
+/* Non-root notes — verde MAGI fosfórico apagado */
 .fretboard-cyber .bg-teal-500 {
-  background: linear-gradient(135deg, #d000ff 0%, #ff00aa 60%, #ff0066 100%) !important;
-  color: #fff !important;
-  box-shadow:
-    0 0 0 1px rgba(255, 0, 170, 0.6),
-    0 0 12px rgba(255, 0, 170, 0.7),
-    inset 0 1px 2px rgba(255, 255, 255, 0.3) !important;
-  text-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
-  border-radius: 4px !important;
-  font-family: inherit;
-}
-
-/* Root note (amber background → bright cyan with intense glow + pulse) */
-.fretboard-cyber .bg-amber-400 {
-  background: linear-gradient(135deg, #66f0ff 0%, #00f0ff 50%, #00b8d4 100%) !important;
+  background: radial-gradient(circle at 35% 30%, #7da668 0%, var(--magi-green) 55%, var(--magi-green-2) 100%) !important;
   color: #000 !important;
   box-shadow:
-    0 0 0 2px var(--cyber-cyan),
-    0 0 18px var(--cyber-cyan),
-    0 0 32px rgba(0, 240, 255, 0.6),
-    inset 0 1px 3px rgba(255, 255, 255, 0.5) !important;
-  text-shadow: 0 0 2px rgba(255, 255, 255, 0.5);
-  border-radius: 4px !important;
-  animation: cyber-root-pulse 2s ease-in-out infinite;
+    0 0 0 1px rgba(107, 149, 96, 0.6),
+    0 0 8px rgba(107, 149, 96, 0.35),
+    inset 0 1px 2px rgba(255, 255, 255, 0.15) !important;
+  border-radius: 50% !important;
+  font-family: inherit;
+  font-weight: 700 !important;
+}
+
+/* Root note — naranja MAGI (como el "MAGI" del centro) */
+.fretboard-cyber .bg-amber-400 {
+  background: radial-gradient(circle at 35% 30%, #e09455 0%, var(--magi-orange) 55%, var(--magi-orange-2) 100%) !important;
+  color: #000 !important;
+  box-shadow:
+    0 0 0 1px var(--magi-orange) ,
+    0 0 10px rgba(201, 122, 58, 0.55),
+    inset 0 1px 2px rgba(255, 255, 255, 0.2) !important;
+  border-radius: 50% !important;
   font-family: inherit;
   font-weight: 900 !important;
 }
 
-@keyframes cyber-root-pulse {
-  0%, 100% {
-    box-shadow:
-      0 0 0 2px var(--cyber-cyan),
-      0 0 18px var(--cyber-cyan),
-      0 0 32px rgba(0, 240, 255, 0.6),
-      inset 0 1px 3px rgba(255, 255, 255, 0.5);
-  }
-  50% {
-    box-shadow:
-      0 0 0 2px var(--cyber-cyan),
-      0 0 28px var(--cyber-cyan),
-      0 0 48px rgba(0, 240, 255, 0.9),
-      inset 0 1px 3px rgba(255, 255, 255, 0.7);
-  }
-}
-
-/* Remove the amber ring on root since we replaced with cyan shadow */
+/* Remove the amber ring on root since we replaced with orange shadow */
 .fretboard-cyber .ring-amber-300\/40 {
   --tw-ring-color: transparent !important;
 }
 
 /* ── Tuning badges in cyber mode ── */
 .fretboard-cyber-badge-standard {
-  background: rgba(0, 255, 136, 0.1) !important;
-  color: var(--cyber-green) !important;
-  border-color: var(--cyber-green) !important;
-  text-shadow: 0 0 6px rgba(0, 255, 136, 0.7);
-  box-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
+  background: rgba(107, 149, 96, 0.1) !important;
+  color: var(--magi-green) !important;
+  border-color: rgba(107, 149, 96, 0.5) !important;
 }
 
 .fretboard-cyber-badge-custom {
-  background: rgba(255, 106, 0, 0.15) !important;
-  color: var(--cyber-orange) !important;
-  border-color: var(--cyber-orange) !important;
-  text-shadow: 0 0 6px rgba(255, 106, 0, 0.7);
-  box-shadow: 0 0 12px rgba(255, 106, 0, 0.4);
+  background: rgba(201, 122, 58, 0.1) !important;
+  color: var(--magi-orange) !important;
+  border-color: rgba(201, 122, 58, 0.5) !important;
 }
 
 /* ── Dropdown menu cyber styling ── */
 .fretboard-cyber .absolute.left-full.bg-gray-900 {
-  background: var(--cyber-bg) !important;
-  border-color: var(--cyber-cyan) !important;
-  box-shadow:
-    0 0 0 1px rgba(0, 240, 255, 0.3),
-    0 4px 24px rgba(0, 240, 255, 0.4) !important;
+  background: var(--magi-bg) !important;
+  border-color: var(--magi-border) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7) !important;
 }
 
 .fretboard-cyber .absolute.left-full button {
   font-family: inherit;
   letter-spacing: 0.05em;
+  color: var(--magi-green) !important;
 }
 
 .fretboard-cyber .absolute.left-full button:hover {
-  background: rgba(0, 240, 255, 0.15) !important;
-  color: var(--cyber-cyan) !important;
-  text-shadow: 0 0 6px var(--cyber-cyan);
+  background: rgba(107, 149, 96, 0.1) !important;
+  color: #b8d4ad !important;
 }
 
 .fretboard-cyber .absolute.left-full .bg-amber-900\/40 {
-  background: rgba(0, 240, 255, 0.2) !important;
-  color: var(--cyber-cyan) !important;
-  text-shadow: 0 0 6px var(--cyber-cyan);
+  background: rgba(201, 122, 58, 0.15) !important;
+  color: var(--magi-orange) !important;
 }
 
 .fretboard-cyber .absolute.left-full .text-gray-600 {
-  color: var(--cyber-cyan) !important;
-  opacity: 0.6;
+  color: var(--magi-green) !important;
+  opacity: 0.55;
 }
 
-/* ── Scan line effect (subtle moving line over the fretboard) ── */
+/* ── Scan line effect (very subtle CRT effect) ── */
 .fretboard-cyber .flex.rounded-t.overflow-hidden {
   position: relative;
 }
@@ -217,14 +192,278 @@ html, body, #root {
     180deg,
     transparent 0%,
     transparent 49%,
-    rgba(0, 240, 255, 0.08) 50%,
+    rgba(107, 149, 96, 0.04) 50%,
     transparent 51%,
     transparent 100%
   );
-  background-size: 100% 8px;
+  background-size: 100% 6px;
   pointer-events: none;
-  opacity: 0.5;
+  opacity: 0.4;
   z-index: 5;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   CYBER-UI — TOTAL MAGI THEME (applies to everything except piano/practice/tabs)
+   Activated by toggling MAGI mode in the header.
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+.cyber-ui {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  background: var(--magi-bg) !important;
+  color: var(--magi-green);
+}
+
+/* Subtle technical grid background */
+.cyber-ui::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--magi-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--magi-grid) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+/* ── HEADER ── */
+.cyber-ui header.bg-gray-900 {
+  background: var(--magi-bg) !important;
+  border-bottom: 1px solid var(--magi-border) !important;
+  position: relative;
+  z-index: 10;
+}
+
+.cyber-ui header h1 {
+  color: var(--magi-orange) !important;
+  text-shadow: 0 0 6px rgba(201, 122, 58, 0.4);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.cyber-ui header h1 .text-teal-400 {
+  color: var(--magi-green) !important;
+  text-shadow: 0 0 6px rgba(107, 149, 96, 0.4);
+}
+
+.cyber-ui header .bg-gray-700,
+.cyber-ui header .bg-gray-800 {
+  background: rgba(107, 149, 96, 0.06) !important;
+}
+
+.cyber-ui header .text-gray-300 {
+  color: var(--magi-green) !important;
+}
+
+.cyber-ui header .text-gray-400 {
+  color: rgba(107, 149, 96, 0.7) !important;
+}
+
+.cyber-ui header .text-gray-500 {
+  color: rgba(107, 149, 96, 0.55) !important;
+}
+
+.cyber-ui header .text-gray-600 {
+  color: rgba(107, 149, 96, 0.45) !important;
+}
+
+.cyber-ui header button {
+  border-radius: 2px !important;
+  letter-spacing: 0.05em;
+}
+
+.cyber-ui header button:hover:not(:disabled) {
+  background: rgba(107, 149, 96, 0.12) !important;
+  color: #b8d4ad !important;
+}
+
+/* Active instrument button (amber/teal/violet → orange MAGI) */
+.cyber-ui header .bg-amber-600,
+.cyber-ui header .bg-teal-600,
+.cyber-ui header .bg-violet-600 {
+  background: rgba(201, 122, 58, 0.2) !important;
+  color: var(--magi-orange) !important;
+  border: 1px solid var(--magi-orange) !important;
+  box-shadow: inset 0 0 6px rgba(201, 122, 58, 0.15);
+}
+
+/* Divider lines */
+.cyber-ui header .bg-gray-700.h-5 {
+  background: var(--magi-border) !important;
+}
+
+/* ── SIDEBAR (aside) ── */
+.cyber-ui aside.bg-gray-900 {
+  background: var(--magi-bg) !important;
+  border-right: 1px solid var(--magi-border) !important;
+  position: relative;
+  z-index: 5;
+}
+
+.cyber-ui aside .text-gray-500 {
+  color: var(--magi-orange) !important;
+  opacity: 0.85;
+}
+
+.cyber-ui aside .text-gray-400 {
+  color: rgba(107, 149, 96, 0.7) !important;
+}
+
+.cyber-ui aside .text-gray-300 {
+  color: var(--magi-green) !important;
+}
+
+.cyber-ui aside .text-gray-600 {
+  color: rgba(107, 149, 96, 0.5) !important;
+}
+
+.cyber-ui aside h2,
+.cyber-ui aside h3 {
+  color: var(--magi-orange) !important;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.cyber-ui aside .border-gray-800,
+.cyber-ui aside .border-gray-700 {
+  border-color: var(--magi-border) !important;
+}
+
+/* Category headers in ScaleLibrary */
+.cyber-ui aside button.hover\:bg-gray-800:hover {
+  background: rgba(107, 149, 96, 0.08) !important;
+}
+
+/* Scale row hover */
+.cyber-ui aside .hover\:bg-gray-800:hover {
+  background: rgba(107, 149, 96, 0.08) !important;
+}
+
+/* Active scale (teal → orange MAGI) */
+.cyber-ui aside .bg-teal-900\/50 {
+  background: rgba(201, 122, 58, 0.15) !important;
+  border-color: var(--magi-orange) !important;
+}
+
+.cyber-ui aside .border-teal-700\/50 {
+  border-color: var(--magi-orange) !important;
+}
+
+.cyber-ui aside .text-teal-300 {
+  color: var(--magi-orange) !important;
+  text-shadow: 0 0 4px rgba(201, 122, 58, 0.3);
+}
+
+.cyber-ui aside .text-teal-400\/80 {
+  color: var(--magi-orange) !important;
+  opacity: 0.85;
+}
+
+/* ── MAIN background ── */
+.cyber-ui main {
+  background: var(--magi-bg) !important;
+  position: relative;
+  z-index: 5;
+}
+
+.cyber-ui main .text-gray-600 {
+  color: rgba(107, 149, 96, 0.55) !important;
+}
+
+/* ── FOOTER ── */
+.cyber-ui footer.bg-gray-900 {
+  background: var(--magi-bg) !important;
+  border-top: 1px solid var(--magi-border) !important;
+  position: relative;
+  z-index: 10;
+}
+
+.cyber-ui footer .text-amber-400 {
+  color: var(--magi-orange) !important;
+  text-shadow: 0 0 4px rgba(201, 122, 58, 0.3);
+  letter-spacing: 0.05em;
+}
+
+.cyber-ui footer .bg-amber-400\/20 {
+  background: rgba(201, 122, 58, 0.15) !important;
+  border-color: var(--magi-orange) !important;
+}
+
+.cyber-ui footer .text-amber-400 {
+  color: var(--magi-orange) !important;
+}
+
+.cyber-ui footer .border-amber-700\/50 {
+  border-color: var(--magi-orange) !important;
+}
+
+.cyber-ui footer .bg-gray-800 {
+  background: rgba(107, 149, 96, 0.06) !important;
+}
+
+.cyber-ui footer .text-gray-400 {
+  color: var(--magi-green) !important;
+}
+
+.cyber-ui footer .text-gray-600 {
+  color: rgba(107, 149, 96, 0.55) !important;
+}
+
+.cyber-ui footer .border-gray-700 {
+  border-color: var(--magi-border) !important;
+}
+
+.cyber-ui footer .bg-gray-700 {
+  background: var(--magi-border) !important;
+}
+
+/* ── Dropdowns / popovers across the app ── */
+.cyber-ui .bg-gray-900,
+.cyber-ui [class*="bg-gray-900"] {
+  background: var(--magi-bg) !important;
+}
+
+.cyber-ui .border-gray-700,
+.cyber-ui .border-gray-800 {
+  border-color: var(--magi-border) !important;
+}
+
+/* Active states (amber selections) → orange MAGI */
+.cyber-ui .bg-amber-900\/50,
+.cyber-ui .bg-amber-900\/40 {
+  background: rgba(201, 122, 58, 0.18) !important;
+}
+
+.cyber-ui .text-amber-300,
+.cyber-ui .text-amber-400 {
+  color: var(--magi-orange) !important;
+}
+
+/* Buttons defaults */
+.cyber-ui button {
+  border-radius: 2px;
+  letter-spacing: 0.04em;
+}
+
+/* Inputs */
+.cyber-ui input,
+.cyber-ui select {
+  background: var(--magi-bg) !important;
+  color: var(--magi-green) !important;
+  border-color: var(--magi-border) !important;
+  font-family: inherit;
+}
+
+.cyber-ui input:focus,
+.cyber-ui select:focus {
+  outline-color: var(--magi-orange) !important;
+}
+
+/* Force z-index so content stays on top of grid */
+.cyber-ui > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────

@@ -76,6 +76,15 @@ export default function App() {
     localStorage.setItem('mt-fretboard-style', fretboardStyle)
   }, [fretboardStyle])
 
+  // Global MAGI UI toggle (applies cyberpunk theme to entire app except piano/practice/tabs)
+  const [magiMode, setMagiMode] = useState<boolean>(
+    () => localStorage.getItem('mt-magi-mode') === 'true'
+  )
+
+  useEffect(() => {
+    localStorage.setItem('mt-magi-mode', String(magiMode))
+  }, [magiMode])
+
   // ── Theme ────────────────────────────────────────────────────────────────
   const [theme, setTheme]           = useState<Theme>(() =>
     (localStorage.getItem('mt-theme') as Theme) ?? 'default'
@@ -178,7 +187,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-950 text-white overflow-hidden">
+    <div className={`${magiMode ? 'cyber-ui' : ''} flex flex-col h-screen bg-gray-950 text-white overflow-hidden`}>
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <header className="flex-shrink-0 bg-gray-900 border-b border-gray-800 px-4 py-2 flex flex-wrap items-center gap-3 z-20">
@@ -243,6 +252,21 @@ export default function App() {
         <div className="flex-1" />
 
         <RootSelector value={root} onChange={setRoot} />
+
+        {/* ── MAGI mode toggle ────────────────────────────────────────────── */}
+        <button
+          onClick={() => setMagiMode(v => !v)}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider rounded transition-all ${
+            magiMode
+              ? 'bg-[#0a0e10] text-[#c97a3a] border border-[rgba(201,122,58,0.6)] shadow-[inset_0_0_8px_rgba(201,122,58,0.15)]'
+              : 'bg-gray-800 text-gray-400 border border-transparent hover:bg-gray-700 hover:text-gray-200'
+          }`}
+          title={magiMode ? 'Desactivar tema MAGI' : 'Activar tema MAGI'}
+        >
+          <span className={magiMode ? 'text-[#6b9560]' : 'opacity-60'}>◢</span>
+          MAGI
+          {magiMode && <span className="text-[10px] text-[#6b9560]">●</span>}
+        </button>
 
         {/* ── Theme selector ──────────────────────────────────────────────── */}
         <div className="relative" ref={themeRef}>

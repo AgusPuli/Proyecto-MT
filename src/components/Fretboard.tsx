@@ -99,6 +99,15 @@ export default function Fretboard({
   const isCyber = style === 'cyberpunk'
   const [zoom, setZoom] = useState(1.0)
   const [openDropdown, setOpenDropdown] = useState<number | null>(null)
+
+  const FRET_COLORS = [
+    { name: 'Cian',    hex: '#22d3ee' },
+    { name: 'Plata',   hex: '#f1f5f9' },
+    { name: 'Dorado',  hex: '#fcd34d' },
+    { name: 'Naranja', hex: '#fb923c' },
+    { name: 'Verde',   hex: '#a3e635' },
+  ]
+  const [fretColor, setFretColor] = useState(FRET_COLORS[4].hex)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const cellH   = Math.round(BASE_CELL_H * zoom)
@@ -154,7 +163,7 @@ export default function Fretboard({
 
         {/* Style toggle: Classic / Cyberpunk */}
         {onStyleChange && (
-          <div className={`flex gap-0.5 rounded p-0.5 ${isCyber ? 'bg-black border border-cyan-500/40' : 'bg-gray-800'}`}>
+          <div className={`flex gap-0.5 rounded p-0.5 ${isCyber ? 'bg-[#0a0d12] border border-[rgba(91,138,154,0.4)]' : 'bg-gray-800'}`}>
             <button
               onClick={() => onStyleChange('classic')}
               className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded transition-all ${
@@ -170,13 +179,33 @@ export default function Fretboard({
               onClick={() => onStyleChange('cyberpunk')}
               className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded transition-all ${
                 isCyber
-                  ? 'bg-gradient-to-r from-cyan-500 to-fuchsia-500 text-black shadow-md shadow-cyan-500/50'
+                  ? 'bg-[#1a2230] text-[#5b8a9a] border border-[rgba(91,138,154,0.5)]'
                   : 'text-gray-500 hover:text-gray-300'
               }`}
               title="Estilo cyberpunk"
             >
               ◢ Cyber
             </button>
+          </div>
+        )}
+
+        {/* Fret color picker — solo en modo CYBER */}
+        {isCyber && (
+          <div className="flex items-center gap-1 px-1.5 py-1 rounded border border-[rgba(91,138,154,0.3)] bg-[#0a0d12]">
+            {FRET_COLORS.map(c => (
+              <button
+                key={c.hex}
+                title={c.name}
+                onClick={() => setFretColor(c.hex)}
+                className="w-4 h-4 rounded-full transition-transform hover:scale-125"
+                style={{
+                  backgroundColor: c.hex,
+                  boxShadow: fretColor === c.hex ? `0 0 6px 2px ${c.hex}` : 'none',
+                  outline: fretColor === c.hex ? `2px solid ${c.hex}` : '2px solid transparent',
+                  outlineOffset: 1,
+                }}
+              />
+            ))}
           </div>
         )}
 
@@ -344,8 +373,8 @@ export default function Fretboard({
 
             {/* Fret 0 — open strings; right border = NUT */}
             <div
-              className="flex flex-col flex-shrink-0 bg-amber-950 border-r-4 border-gray-300"
-              style={{ width: w(0) }}
+              className="flex flex-col flex-shrink-0 bg-amber-950 border-r-4"
+              style={{ width: w(0), borderColor: isCyber ? fretColor : '#d1d5db' }}
             >
               {strings.map(s => {
                 const noteData = noteMap.get(`${s}-0`)
@@ -370,8 +399,8 @@ export default function Fretboard({
             {fretColumns.map(fret => (
               <div
                 key={fret}
-                className="flex flex-col flex-shrink-0 bg-amber-950 border-r border-gray-600/70"
-                style={{ width: w(fret) }}
+                className="flex flex-col flex-shrink-0 bg-amber-950 border-r"
+                style={{ width: w(fret), borderColor: isCyber ? fretColor : 'rgba(75,85,99,0.7)' }}
               >
                 {strings.map(s => {
                   const noteData = noteMap.get(`${s}-${fret}`)
