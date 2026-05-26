@@ -294,14 +294,19 @@ export default function ChordExplorer({
                   centerColor="#fcd34d"
                 />
               </div>
-              {hoverQual !== null && (
-                <div className="text-center max-w-md">
-                  <span className="text-sm font-bold" style={{ color: CATEGORY_COLOR[CHORD_QUALITIES[hoverQual].category].text }}>
-                    {chordName(note, CHORD_QUALITIES[hoverQual])}
-                  </span>
-                  <span className="text-gray-500 text-xs"> — {CHORD_QUALITIES[hoverQual].desc}</span>
-                </div>
-              )}
+              {/* Fixed-height preview keeps the modal from jumping on hover */}
+              <div className="h-10 flex items-center justify-center text-center max-w-md px-2">
+                {hoverQual !== null ? (
+                  <p>
+                    <span className="text-sm font-bold" style={{ color: CATEGORY_COLOR[CHORD_QUALITIES[hoverQual].category].text }}>
+                      {chordName(note, CHORD_QUALITIES[hoverQual])}
+                    </span>
+                    <span className="text-gray-500 text-xs"> — {CHORD_QUALITIES[hoverQual].desc}</span>
+                  </p>
+                ) : (
+                  <span className="text-xs text-gray-600">Pasá el mouse sobre un tipo para ver el acorde</span>
+                )}
+              </div>
             </div>
           )}
 
