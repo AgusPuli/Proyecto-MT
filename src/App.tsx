@@ -11,6 +11,7 @@ import CustomScaleBuilder from './components/CustomScaleBuilder'
 import ScaleTones from './components/ScaleTones'
 import PracticeMode from './components/PracticeMode'
 import TabEditor from './components/TabEditor'
+import ChordExplorer from './components/ChordExplorer'
 import { computeFretboard, BASS_TUNING, GUITAR_TUNING } from './data/notes'
 import { getAllScales, BUILT_IN_SCALES, CHROMATIC_SCALE } from './data/scales'
 import { scaleRepository } from './data/storage'
@@ -63,6 +64,7 @@ export default function App() {
   const [activeFingeringId, setActiveFingeringId] = useState<string>(DEFAULT_FINGERING.id)
   const [practiceOpen, setPracticeOpen] = useState(false)
   const [tabOpen, setTabOpen]       = useState(false)
+  const [chordsOpen, setChordsOpen] = useState(false)
   const [instrument, setInstrument] = useState<InstrumentType>('bass')
   // Custom tuning per instrument (null = use standard)
   const [customBassTuning, setCustomBassTuning] = useState<NoteName[] | null>(null)
@@ -369,19 +371,43 @@ export default function App() {
               />
             ) : (
               <>
-                <Fretboard
-                  notes={fretboardNotes}
-                  labelMode={labelMode}
-                  totalFrets={TOTAL_FRETS}
-                  instrument={instrument}
-                  tuning={currentTuning}
-                  isStandardTuning={isStandardTuning}
-                  style={fretboardStyle}
-                  onFretClick={handleFretClick}
-                  onStringTuningChange={handleStringTuningChange}
-                  onResetTuning={handleResetTuning}
-                  onStyleChange={setFretboardStyle}
-                />
+                <div className="flex items-stretch gap-3">
+                  <div className="flex-1 min-w-0">
+                    <Fretboard
+                      notes={fretboardNotes}
+                      labelMode={labelMode}
+                      totalFrets={TOTAL_FRETS}
+                      instrument={instrument}
+                      tuning={currentTuning}
+                      isStandardTuning={isStandardTuning}
+                      style={fretboardStyle}
+                      onFretClick={handleFretClick}
+                      onStringTuningChange={handleStringTuningChange}
+                      onResetTuning={handleResetTuning}
+                      onStyleChange={setFretboardStyle}
+                    />
+                  </div>
+
+                  {instrument === 'guitar' && (
+                    <button
+                      onClick={() => setChordsOpen(true)}
+                      title="Explorar acordes"
+                      className="flex-shrink-0 self-stretch w-[72px] flex flex-col items-center justify-center gap-2 rounded-xl
+                                 bg-gradient-to-b from-teal-600 to-teal-700 text-white shadow-lg shadow-teal-900/40
+                                 hover:from-teal-500 hover:to-teal-600 hover:shadow-teal-800/50 transition-all focus:outline-none"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-7 h-7">
+                        <rect x="5" y="4" width="14" height="16" rx="1.5" />
+                        <line x1="9.67" y1="4" x2="9.67" y2="20" />
+                        <line x1="14.33" y1="4" x2="14.33" y2="20" />
+                        <line x1="5" y1="9.33" x2="19" y2="9.33" />
+                        <line x1="5" y1="14.67" x2="19" y2="14.67" />
+                        <circle cx="9.67" cy="12" r="1.7" fill="currentColor" stroke="none" />
+                      </svg>
+                      <span className="text-xs font-bold tracking-wide">Acordes</span>
+                    </button>
+                  )}
+                </div>
                 <p className="mt-3 text-xs text-gray-600">Click any fret to set it as the root note.</p>
               </>
             )}
@@ -402,6 +428,12 @@ export default function App() {
       {/* Overlays */}
       <PracticeMode visible={practiceOpen} onClose={() => setPracticeOpen(false)} />
       <TabEditor    visible={tabOpen}      onClose={() => setTabOpen(false)} />
+      <ChordExplorer
+        visible={chordsOpen}
+        onClose={() => setChordsOpen(false)}
+        tuning={currentTuning}
+        totalFrets={TOTAL_FRETS}
+      />
 
       {/* Footer */}
       <footer className="flex-shrink-0 bg-gray-900 border-t border-gray-800 px-4 py-2 flex flex-wrap items-center gap-3">
