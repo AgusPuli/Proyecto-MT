@@ -56,9 +56,9 @@ const BASE_CELL_H = 72
 // Base dot size — scaled by zoom at render time
 const BASE_DOT_SIZE = 44
 
-const ZOOM_MIN  = 0.5
+const ZOOM_MIN  = 0.3
 const ZOOM_MAX  = 2.0
-const ZOOM_STEP = 0.25
+const ZOOM_STEP = 0.1
 
 /**
  * Width of each fret column in pixels (base, before zoom).

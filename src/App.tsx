@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Capacitor } from '@capacitor/core'
 import Fretboard from './components/Fretboard'
 import Piano from './components/Piano'
 import CircleOfFifths from './components/CircleOfFifths'
@@ -39,6 +40,10 @@ async function shutdownServer() {
   try { await fetch('/__shutdown') } catch { /* fine */ }
 }
 
+// true cuando corre como app nativa (Android/iOS), false en el navegador.
+// Se usa para desactivar el heartbeat y el botón de apagado del dev server.
+const IS_NATIVE = Capacitor.isNativePlatform()
+
 const DEFAULT_ROOT: NoteName = 'A'
 const DEFAULT_SCALE: Scale = BUILT_IN_SCALES.find(s => s.id === 'minor-pentatonic')!
 const TOTAL_FRETS = 24
@@ -53,6 +58,9 @@ export default function App() {
   const [labelMode, setLabelMode]   = useState<LabelMode>('note')
   const [customScales, setCustomScales] = useState<Scale[]>(() => scaleRepository.getCustomScales())
   const [sidebarOpen, setSidebarOpen]   = useState(true)
+  const [headerOpen, setHeaderOpen] = useState<boolean>(
+    () => localStorage.getItem('mt-header-open') !== 'false'
+  )
   const [off, setOff]               = useState(false)
   const [chordFilter, setChordFilter]   = useState<ChordFilter>('all')
   const [showAllNotes, setShowAllNotes] = useState(false)
@@ -87,6 +95,10 @@ export default function App() {
     localStorage.setItem('mt-magi-mode', String(magiMode))
   }, [magiMode])
 
+  useEffect(() => {
+    localStorage.setItem('mt-header-open', String(headerOpen))
+  }, [headerOpen])
+
   // ── Theme ────────────────────────────────────────────────────────────────
   const [theme, setTheme]           = useState<Theme>(() =>
     (localStorage.getItem('mt-theme') as Theme) ?? 'default'
@@ -112,7 +124,10 @@ export default function App() {
   }, [themeOpen])
 
   // ── Heartbeat ────────────────────────────────────────────────────────────
+  // Solo en el navegador: avisa al dev server que la pestaña sigue abierta.
+  // En la app nativa no hay servidor, así que lo salteamos.
   useEffect(() => {
+    if (IS_NATIVE) return
     const ping = () => fetch('/__heartbeat').catch(() => {})
     ping()
     const id = setInterval(ping, 20_000)
@@ -192,22 +207,32 @@ export default function App() {
     <div className={`${magiMode ? 'cyber-ui' : ''} flex flex-col h-screen bg-gray-950 text-white overflow-hidden`}>
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
-      <header className="flex-shrink-0 bg-gray-900 border-b border-gray-800 px-4 py-2 flex flex-wrap items-center gap-3 z-20">
+      <header className="flex-shrink-0 bg-gray-900 border-b border-gray-800 px-2 py-1 flex flex-wrap items-center gap-1.5 z-20">
 
         {/* Sidebar toggle */}
         <button onClick={() => setSidebarOpen(v => !v)}
-          className="p-1.5 rounded hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors focus:outline-none"
-          title={sidebarOpen ? 'Ocultar sidebar' : 'Mostrar sidebar'}>
+          className="p-1 rounded hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors focus:outline-none"
+          title={sidebarOpen ? 'Ocultar escalas' : 'Mostrar escalas'}>
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
 
         {/* Logo */}
-        <h1 className="text-lg font-black tracking-tight text-amber-400 mr-2">
+        <h1 className="text-base font-black tracking-tight text-amber-400">
           Bass<span className="text-teal-400">Theory</span>
         </h1>
 
+        {/* Plegar / desplegar la barra de herramientas */}
+        <button onClick={() => setHeaderOpen(v => !v)}
+          className="p-1 rounded hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors focus:outline-none"
+          title={headerOpen ? 'Ocultar barra de herramientas' : 'Mostrar barra de herramientas'}>
+          <svg className={`w-4 h-4 transition-transform ${headerOpen ? '' : 'rotate-180'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+          </svg>
+        </button>
+
+        {headerOpen && (<>
         <div className="h-5 w-px bg-gray-700" />
 
         <LabelToggle value={labelMode} onChange={setLabelMode} />
@@ -215,14 +240,14 @@ export default function App() {
 
         {/* Show all notes */}
         <button onClick={() => setShowAllNotes(!showAllNotes)}
-          className={`px-3 py-1.5 text-sm font-medium rounded transition-colors focus:outline-none
+          className={`px-2 py-1 text-xs font-medium rounded transition-colors focus:outline-none
             ${showAllNotes ? 'bg-teal-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>
           {showAllNotes ? 'Mostrar Escala' : 'Mostrar Todo'}
         </button>
 
         {/* Practice */}
         <button onClick={() => setPracticeOpen(true)}
-          className="px-3 py-1.5 text-sm font-medium rounded bg-gray-800 text-gray-300 hover:bg-amber-900/40 hover:text-amber-300 transition-colors focus:outline-none">
+          className="px-2 py-1 text-xs font-medium rounded bg-gray-800 text-gray-300 hover:bg-amber-900/40 hover:text-amber-300 transition-colors focus:outline-none">
           🎮 Práctica
         </button>
 
@@ -245,11 +270,13 @@ export default function App() {
           ))}
         </div>
 
-        {/* Tabs */}
-        <button onClick={() => setTabOpen(true)}
-          className="px-3 py-1.5 text-sm font-medium rounded bg-gray-800 text-gray-300 hover:bg-teal-900/50 hover:text-teal-300 transition-colors focus:outline-none">
-          🎸 Tabs
-        </button>
+        {/* Tabs — no se incluye en la app nativa (solo navegador). */}
+        {!IS_NATIVE && (
+          <button onClick={() => setTabOpen(true)}
+            className="px-2 py-1 text-xs font-medium rounded bg-gray-800 text-gray-300 hover:bg-teal-900/50 hover:text-teal-300 transition-colors focus:outline-none">
+            🎸 Tabs
+          </button>
+        )}
 
         <div className="flex-1" />
 
@@ -274,7 +301,7 @@ export default function App() {
         <div className="relative" ref={themeRef}>
           <button
             onClick={() => setThemeOpen(v => !v)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-gray-200 transition-colors focus:outline-none"
+            className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-gray-200 transition-colors focus:outline-none"
             title="Cambiar tema">
             <span>{THEMES.find(t => t.id === theme)?.icon}</span>
             <span className="hidden sm:inline text-xs">{THEMES.find(t => t.id === theme)?.label}</span>
@@ -307,19 +334,22 @@ export default function App() {
           )}
         </div>
 
-        {/* Shutdown */}
-        <button
-          onClick={async () => {
-            if (!confirm('¿Apagar BassTheory?')) return
-            setOff(true)
-            await shutdownServer()
-          }}
-          className="ml-1 p-1.5 rounded hover:bg-red-900/40 text-gray-600 hover:text-red-400 transition-colors focus:outline-none"
-          title="Apagar servidor">
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5.636 5.636a9 9 0 1012.728 0M12 3v9" />
-          </svg>
-        </button>
+        {/* Shutdown — solo en el navegador (apaga el dev server). En la app no aplica. */}
+        {!IS_NATIVE && (
+          <button
+            onClick={async () => {
+              if (!confirm('¿Apagar BassTheory?')) return
+              setOff(true)
+              await shutdownServer()
+            }}
+            className="ml-1 p-1.5 rounded hover:bg-red-900/40 text-gray-600 hover:text-red-400 transition-colors focus:outline-none"
+            title="Apagar servidor">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5.636 5.636a9 9 0 1012.728 0M12 3v9" />
+            </svg>
+          </button>
+        )}
+        </>)}
       </header>
 
       {/* ── Body ────────────────────────────────────────────────────────────── */}
@@ -427,7 +457,7 @@ export default function App() {
 
       {/* Overlays */}
       <PracticeMode visible={practiceOpen} onClose={() => setPracticeOpen(false)} />
-      <TabEditor    visible={tabOpen}      onClose={() => setTabOpen(false)} />
+      {!IS_NATIVE && <TabEditor visible={tabOpen} onClose={() => setTabOpen(false)} />}
       <ChordExplorer
         visible={chordsOpen}
         onClose={() => setChordsOpen(false)}

@@ -45,14 +45,6 @@ const FRET_WIDTHS = [getFW(0), ...Array.from({ length: PRACTICE_FRETS }, (_, i) 
 function ri(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min
 }
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
 function openNote(s: number): NoteName {
   return STANDARD_TUNING[3 - s]
 }
@@ -287,7 +279,7 @@ function CircleNotePicker({
 // MODO CIEGO
 // ─────────────────────────────────────────────────────────────────────────────
 
-function BlindMode({ onExit }: { onExit: () => void }) {
+function BlindMode({ onExit: _onExit }: { onExit: () => void }) {
   const [pos,    setPos]    = useState({ s: ri(0, 3), f: ri(1, PRACTICE_FRETS) })
   const [picked, setPicked] = useState<NoteName | null>(null)
   const [result, setResult] = useState<'correct' | 'wrong' | null>(null)
@@ -367,7 +359,7 @@ function BlindMode({ onExit }: { onExit: () => void }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function RememberSetup({
-  root, scale, onRootChange, onScaleChange, onStart, onExit,
+  root, scale, onRootChange, onScaleChange, onStart, onExit: _onExit,
 }: {
   root: NoteName
   scale: Scale

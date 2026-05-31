@@ -127,7 +127,7 @@ function assignFingers(frets: (number | null)[]): {
   const atMin = fretted.filter(x => x.f === minFret)
 
   // Lowest sounding string (open or fretted).
-  const minSounding = frets.reduce((m, f, s) => (f !== null && s < m ? s : m), frets.length)
+  const minSounding = frets.reduce<number>((m, f, s) => (f !== null && s < m ? s : m), frets.length)
   const barreLow = Math.min(...atMin.map(x => x.s))
   const useBarre = atMin.length >= 2 && maxFret > minFret && barreLow === minSounding
 
