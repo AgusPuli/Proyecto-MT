@@ -4,7 +4,7 @@ export type IntervalName = '1' | 'b2' | '2' | 'b3' | '3' | '4' | '#4' | '5' | 'b
 
 export type LabelMode = 'note' | 'solfege' | 'interval' | 'finger' | 'degree'
 
-export type InstrumentType = 'bass' | 'guitar' | 'piano'
+export type InstrumentType = 'bass' | 'guitar' | 'ukulele' | 'piano'
 
 export type FretboardStyle = 'classic' | 'cyberpunk'
 

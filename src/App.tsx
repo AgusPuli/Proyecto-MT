@@ -13,7 +13,7 @@ import ScaleTones from './components/ScaleTones'
 import PracticeMode from './components/PracticeMode'
 import TabEditor from './components/TabEditor'
 import ChordExplorer from './components/ChordExplorer'
-import { computeFretboard, BASS_TUNING, GUITAR_TUNING } from './data/notes'
+import { computeFretboard, BASS_TUNING, GUITAR_TUNING, UKULELE_TUNING } from './data/notes'
 import { getAllScales, BUILT_IN_SCALES, CHROMATIC_SCALE } from './data/scales'
 import { scaleRepository } from './data/storage'
 import { BUILT_IN_FINGERINGS, DEFAULT_FINGERING } from './data/fingerings'
@@ -77,6 +77,7 @@ export default function App() {
   // Custom tuning per instrument (null = use standard)
   const [customBassTuning, setCustomBassTuning] = useState<NoteName[] | null>(null)
   const [customGuitarTuning, setCustomGuitarTuning] = useState<NoteName[] | null>(null)
+  const [customUkuleleTuning, setCustomUkuleleTuning] = useState<NoteName[] | null>(null)
   // Fretboard visual style ('classic' default, 'cyberpunk' optional)
   const [fretboardStyle, setFretboardStyle] = useState<FretboardStyle>(
     () => (localStorage.getItem('mt-fretboard-style') as FretboardStyle) ?? 'classic'
@@ -137,8 +138,8 @@ export default function App() {
   // ── Derived state ─────────────────────────────────────────────────────────
   const activeScale = showAllNotes ? CHROMATIC_SCALE : selectedScale
   const activeFingeringPreset = fingeringPresets.find(p => p.id === activeFingeringId)
-  const standardTuning = instrument === 'guitar' ? GUITAR_TUNING : BASS_TUNING
-  const customTuning = instrument === 'guitar' ? customGuitarTuning : customBassTuning
+  const standardTuning = instrument === 'guitar' ? GUITAR_TUNING : instrument === 'ukulele' ? UKULELE_TUNING : BASS_TUNING
+  const customTuning = instrument === 'guitar' ? customGuitarTuning : instrument === 'ukulele' ? customUkuleleTuning : customBassTuning
   const currentTuning = customTuning ?? standardTuning
   // Check if current tuning matches standard
   const isStandardTuning = !customTuning || customTuning.every((n, i) => n === standardTuning[i])
@@ -161,6 +162,8 @@ export default function App() {
 
     if (instrument === 'guitar') {
       setCustomGuitarTuning(matchesStandard ? null : newTuning)
+    } else if (instrument === 'ukulele') {
+      setCustomUkuleleTuning(matchesStandard ? null : newTuning)
     } else {
       setCustomBassTuning(matchesStandard ? null : newTuning)
     }
@@ -170,6 +173,8 @@ export default function App() {
   function handleResetTuning() {
     if (instrument === 'guitar') {
       setCustomGuitarTuning(null)
+    } else if (instrument === 'ukulele') {
+      setCustomUkuleleTuning(null)
     } else {
       setCustomBassTuning(null)
     }
@@ -253,19 +258,28 @@ export default function App() {
 
         {/* Instrument selector */}
         <div className="flex gap-1 bg-gray-800 rounded p-0.5">
-          {['bass', 'guitar', 'piano'].map((inst) => (
+          {(['bass', 'guitar', 'ukulele', 'piano'] as InstrumentType[]).map((inst) => (
             <button
               key={inst}
-              onClick={() => setInstrument(inst as InstrumentType)}
+              onClick={() => setInstrument(inst)}
               className={`px-2.5 py-1 text-xs font-semibold rounded transition-colors ${
                 instrument === inst
-                  ? inst === 'piano' ? 'bg-violet-600 text-white' :
-                    inst === 'guitar' ? 'bg-teal-600 text-white' :
+                  ? inst === 'piano'   ? 'bg-violet-600 text-white' :
+                    inst === 'guitar'  ? 'bg-teal-600 text-white'   :
+                    inst === 'ukulele' ? 'bg-green-600 text-white'  :
                     'bg-amber-600 text-white'
                   : 'text-gray-400 hover:text-gray-300'
               }`}
-              title={inst === 'bass' ? 'Bajo (4 cuerdas)' : inst === 'guitar' ? 'Guitarra (6 cuerdas)' : 'Piano'}>
-              {inst === 'bass' ? '🎸 Bajo' : inst === 'guitar' ? '🎸 Guitarra' : '🎹 Piano'}
+              title={
+                inst === 'bass'    ? 'Bajo (4 cuerdas)'    :
+                inst === 'guitar'  ? 'Guitarra (6 cuerdas)':
+                inst === 'ukulele' ? 'Ukelele (4 cuerdas)' :
+                'Piano'
+              }>
+              {inst === 'bass'    ? '🎸 Bajo'    :
+               inst === 'guitar'  ? '🎸 Guitarra':
+               inst === 'ukulele' ? '🪗 Ukelele' :
+               '🎹 Piano'}
             </button>
           ))}
         </div>
@@ -418,13 +432,16 @@ export default function App() {
                     />
                   </div>
 
-                  {instrument === 'guitar' && (
+                  {(instrument === 'guitar' || instrument === 'ukulele') && (
                     <button
                       onClick={() => setChordsOpen(true)}
                       title="Explorar acordes"
-                      className="flex-shrink-0 self-stretch w-[72px] flex flex-col items-center justify-center gap-2 rounded-xl
-                                 bg-gradient-to-b from-teal-600 to-teal-700 text-white shadow-lg shadow-teal-900/40
-                                 hover:from-teal-500 hover:to-teal-600 hover:shadow-teal-800/50 transition-all focus:outline-none"
+                      className={`flex-shrink-0 self-stretch w-[72px] flex flex-col items-center justify-center gap-2 rounded-xl
+                                 text-white shadow-lg transition-all focus:outline-none
+                                 ${instrument === 'ukulele'
+                                   ? 'bg-gradient-to-b from-green-600 to-green-700 shadow-green-900/40 hover:from-green-500 hover:to-green-600'
+                                   : 'bg-gradient-to-b from-teal-600 to-teal-700 shadow-teal-900/40 hover:from-teal-500 hover:to-teal-600'
+                                 }`}
                     >
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-7 h-7">
                         <rect x="5" y="4" width="14" height="16" rx="1.5" />

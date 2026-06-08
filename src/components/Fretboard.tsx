@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { BASS_TUNING, GUITAR_TUNING, CHROMATIC_NOTES, getNoteAtFret, NOTE_TO_SOLFEGE } from '../data/notes'
+import { BASS_TUNING, GUITAR_TUNING, UKULELE_TUNING, CHROMATIC_NOTES, getNoteAtFret, NOTE_TO_SOLFEGE } from '../data/notes'
 import type { FretNote, FretboardStyle, LabelMode, NoteName, InstrumentType } from '../types'
 
 interface FretboardProps {
@@ -29,6 +29,10 @@ const INSTRUMENT_CONFIG: Record<InstrumentType, { thickness: number[]; colors: s
   guitar: {
     thickness: [1, 1.5, 2, 2.5, 3, 3.5],
     colors: ['#d0d8e8', '#c0c8d8', '#b0b8c8', '#9099a8', '#707888', '#505868'],
+  },
+  ukulele: {
+    thickness: [1, 1, 1.5, 1.5],
+    colors: ['#e8d8b0', '#dccca0', '#d0c090', '#c4b480'],
   },
   piano: {
     thickness: [],
@@ -116,7 +120,11 @@ export default function Fretboard({
 
   // Get configuration for the selected instrument
   const config = INSTRUMENT_CONFIG[instrument]
-  const tuning = propTuning ?? (instrument === 'guitar' ? GUITAR_TUNING : BASS_TUNING)
+  const tuning = propTuning ?? (
+    instrument === 'guitar'  ? GUITAR_TUNING  :
+    instrument === 'ukulele' ? UKULELE_TUNING :
+    BASS_TUNING
+  )
 
   // Build labels array from current tuning (display order: top = highest string)
   // tuning[0] = lowest, tuning[length-1] = highest

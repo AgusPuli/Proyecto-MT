@@ -30,6 +30,11 @@ export const BASS_TUNING: NoteName[] = ['E', 'A', 'D', 'G']
 // index 0 = low E, index 5 = high E
 export const GUITAR_TUNING: NoteName[] = ['E', 'A', 'D', 'G', 'B', 'E']
 
+// Standard ukulele tuning — re-entrant GCEA (low to high in display, but G is re-entrant high G)
+// Stored low→high by pitch class: C(4) G(4) E(4) A(4) → as note names: ['G', 'C', 'E', 'A']
+// String 0 (lowest in array) = G4, String 1 = C4, String 2 = E4, String 3 = A4
+export const UKULELE_TUNING: NoteName[] = ['G', 'C', 'E', 'A']
+
 // Kept for backward compatibility
 export const STANDARD_TUNING: NoteName[] = BASS_TUNING
 
