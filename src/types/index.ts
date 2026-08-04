@@ -6,8 +6,6 @@ export type LabelMode = 'note' | 'solfege' | 'interval' | 'finger' | 'degree'
 
 export type InstrumentType = 'bass' | 'guitar' | 'piano'
 
-export type FretboardStyle = 'classic' | 'cyberpunk'
-
 export type ChordFilter = 'all' | 'triads' | 'sevenths'
 // 'all'      → show all scale notes
 // 'triads'   → only 1, b3/3, 5, b5/#4 (root + third + fifth)

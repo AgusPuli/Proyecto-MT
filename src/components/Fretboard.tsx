@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { BASS_TUNING, GUITAR_TUNING, CHROMATIC_NOTES, getNoteAtFret, NOTE_TO_SOLFEGE } from '../data/notes'
-import type { FretNote, FretboardStyle, LabelMode, NoteName, InstrumentType } from '../types'
+import type { FretNote, LabelMode, NoteName, InstrumentType } from '../types'
 
 interface FretboardProps {
   notes: FretNote[]
@@ -9,11 +10,9 @@ interface FretboardProps {
   instrument?: InstrumentType
   tuning?: NoteName[]
   isStandardTuning?: boolean
-  style?: FretboardStyle
   onFretClick: (string: number, fret: number, note: NoteName) => void
   onStringTuningChange?: (stringIdx: number, newNote: NoteName) => void
   onResetTuning?: () => void
-  onStyleChange?: (style: FretboardStyle) => void
 }
 
 // Fret markers per real guitar/bass convention
@@ -90,24 +89,12 @@ export default function Fretboard({
   instrument = 'bass',
   tuning: propTuning,
   isStandardTuning = true,
-  style = 'classic',
   onFretClick,
   onStringTuningChange,
   onResetTuning,
-  onStyleChange,
 }: FretboardProps) {
-  const isCyber = style === 'cyberpunk'
   const [zoom, setZoom] = useState(1.0)
   const [openDropdown, setOpenDropdown] = useState<number | null>(null)
-
-  const FRET_COLORS = [
-    { name: 'Cian',    hex: '#22d3ee' },
-    { name: 'Plata',   hex: '#f1f5f9' },
-    { name: 'Dorado',  hex: '#fcd34d' },
-    { name: 'Naranja', hex: '#fb923c' },
-    { name: 'Verde',   hex: '#a3e635' },
-  ]
-  const [fretColor, setFretColor] = useState(FRET_COLORS[4].hex)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const cellH   = Math.round(BASE_CELL_H * zoom)
@@ -156,58 +143,10 @@ export default function Fretboard({
   const strings     = Array.from({ length: tuning.length }, (_, i) => i)
 
   return (
-    <div className={`select-none ${isCyber ? 'fretboard-cyber' : ''}`}>
+    <div className="select-none">
 
-      {/* ── Top bar: style toggle + zoom controls + tuning badge ─────────── */}
+      {/* ── Top bar: zoom controls + tuning badge ─────────────────────────── */}
       <div className="flex items-center gap-2 mb-2 pr-1">
-
-        {/* Style toggle: Classic / Cyberpunk */}
-        {onStyleChange && (
-          <div className={`flex gap-0.5 rounded p-0.5 ${isCyber ? 'bg-[#0a0d12] border border-[rgba(91,138,154,0.4)]' : 'bg-gray-800'}`}>
-            <button
-              onClick={() => onStyleChange('classic')}
-              className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded transition-all ${
-                !isCyber
-                  ? 'bg-amber-600 text-white shadow-md'
-                  : 'text-gray-500 hover:text-gray-300'
-              }`}
-              title="Estilo clásico"
-            >
-              Clásico
-            </button>
-            <button
-              onClick={() => onStyleChange('cyberpunk')}
-              className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded transition-all ${
-                isCyber
-                  ? 'bg-[#1a2230] text-[#5b8a9a] border border-[rgba(91,138,154,0.5)]'
-                  : 'text-gray-500 hover:text-gray-300'
-              }`}
-              title="Estilo cyberpunk"
-            >
-              ◢ Cyber
-            </button>
-          </div>
-        )}
-
-        {/* Fret color picker — solo en modo CYBER */}
-        {isCyber && (
-          <div className="flex items-center gap-1 px-1.5 py-1 rounded border border-[rgba(91,138,154,0.3)] bg-[#0a0d12]">
-            {FRET_COLORS.map(c => (
-              <button
-                key={c.hex}
-                title={c.name}
-                onClick={() => setFretColor(c.hex)}
-                className="w-4 h-4 rounded-full transition-transform hover:scale-125"
-                style={{
-                  backgroundColor: c.hex,
-                  boxShadow: fretColor === c.hex ? `0 0 6px 2px ${c.hex}` : 'none',
-                  outline: fretColor === c.hex ? `2px solid ${c.hex}` : '2px solid transparent',
-                  outlineOffset: 1,
-                }}
-              />
-            ))}
-          </div>
-        )}
 
         <div className="flex-1" />
 
@@ -253,37 +192,21 @@ export default function Fretboard({
         {onStringTuningChange && (
           <div className="flex items-center gap-1.5 ml-2">
             {isStandardTuning ? (
-              <span
-                className={`px-2.5 py-1 text-xs font-semibold rounded border ${
-                  isCyber
-                    ? 'fretboard-cyber-badge-standard uppercase tracking-wider'
-                    : 'bg-teal-900/40 text-teal-300 border-teal-700/40'
-                }`}
-              >
-                {isCyber ? '▣ TUNING.STD' : 'Afinación estándar'}
+              <span className="px-2.5 py-1 text-xs font-semibold rounded border bg-teal-900/40 text-teal-300 border-teal-700/40">
+                Afinación estándar
               </span>
             ) : (
               <>
-                <span
-                  className={`px-2.5 py-1 text-xs font-semibold rounded border ${
-                    isCyber
-                      ? 'fretboard-cyber-badge-custom uppercase tracking-wider'
-                      : 'bg-amber-900/40 text-amber-300 border-amber-700/40'
-                  }`}
-                >
-                  {isCyber ? '⚠ TUNING.CUSTOM' : 'Afinación personalizada'}
+                <span className="px-2.5 py-1 text-xs font-semibold rounded border bg-amber-900/40 text-amber-300 border-amber-700/40">
+                  Afinación personalizada
                 </span>
                 {onResetTuning && (
                   <button
                     onClick={onResetTuning}
-                    className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
-                      isCyber
-                        ? 'bg-black border border-orange-500/60 text-orange-400 hover:bg-orange-500/20 uppercase tracking-wider'
-                        : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-200'
-                    }`}
+                    className="px-2 py-1 text-xs font-medium rounded transition-colors bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-200"
                     title="Restablecer a afinación estándar"
                   >
-                    {isCyber ? '↺ RESET' : 'Reset'}
+                    Reset
                   </button>
                 )}
               </>
@@ -374,7 +297,7 @@ export default function Fretboard({
             {/* Fret 0 — open strings; right border = NUT */}
             <div
               className="flex flex-col flex-shrink-0 bg-amber-950 border-r-4"
-              style={{ width: w(0), borderColor: isCyber ? fretColor : '#d1d5db' }}
+              style={{ width: w(0), borderColor: '#d1d5db' }}
             >
               {strings.map(s => {
                 const noteData = noteMap.get(`${s}-0`)
@@ -399,9 +322,22 @@ export default function Fretboard({
             {fretColumns.map(fret => (
               <div
                 key={fret}
-                className="flex flex-col flex-shrink-0 bg-amber-950 border-r"
-                style={{ width: w(fret), borderColor: isCyber ? fretColor : 'rgba(75,85,99,0.7)' }}
+                className="relative flex flex-col flex-shrink-0 bg-amber-950 border-r"
+                style={{ width: w(fret), borderColor: 'rgba(75,85,99,0.7)' }}
               >
+                {/* Position marker — centered on the neck, like a real inlay dot */}
+                {MARKER_FRETS.has(fret) && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none">
+                    {DOUBLE_MARKERS.has(fret) ? (
+                      <>
+                        <span className="block w-2.5 h-2.5 rounded-full bg-gray-500" />
+                        <span className="block w-2.5 h-2.5 rounded-full bg-gray-500" />
+                      </>
+                    ) : (
+                      <span className="block w-2.5 h-2.5 rounded-full bg-gray-500" />
+                    )}
+                  </div>
+                )}
                 {strings.map(s => {
                   const noteData = noteMap.get(`${s}-${fret}`)
                   return (
@@ -449,6 +385,7 @@ export default function Fretboard({
                     )
                   )}
                 </div>
+
                 {/* Fret number */}
                 <span className="text-gray-600 leading-none" style={{ fontSize: 10 }}>
                   {fret}
@@ -493,16 +430,20 @@ function NoteDot({
   const label    = getLabel(note, labelMode)
   const fontSize = Math.round((label.length <= 2 ? 14 : label.length === 3 ? 12 : 10) * zoom)
   return (
-    <span
+    <motion.span
       className={`relative z-10 flex items-center justify-center rounded-full font-bold leading-none
         ${note.isRoot
           ? 'bg-amber-400 text-amber-950 shadow-md shadow-amber-900/60 ring-2 ring-amber-300/40'
           : 'bg-teal-500 text-gray-950 shadow-sm shadow-teal-900/40'
         }`}
       style={{ width: dotSize, height: dotSize, fontSize }}
+      initial={{ scale: 0, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      exit={{ scale: 0, opacity: 0 }}
+      transition={{ type: 'spring', stiffness: 500, damping: 26 }}
     >
       {label}
-    </span>
+    </motion.span>
   )
 }
 
@@ -535,10 +476,13 @@ function FretCell({
         }}
       />
 
-      {/* Note dot */}
-      {noteData && (
-        <NoteDot note={noteData} labelMode={labelMode} dotSize={dotSize} zoom={zoom} />
-      )}
+      {/* Note dot — animates in when it appears, out when it disappears;
+          stays untouched (no animation) while it persists across changes. */}
+      <AnimatePresence>
+        {noteData && (
+          <NoteDot key="dot" note={noteData} labelMode={labelMode} dotSize={dotSize} zoom={zoom} />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

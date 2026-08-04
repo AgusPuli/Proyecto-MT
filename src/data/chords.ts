@@ -70,6 +70,28 @@ export function chordName(root: NoteName, quality: ChordQuality): string {
   return `${root}${quality.symbol}`
 }
 
+// Spanish interval names, keyed by semitones from the root.
+export const INTERVAL_LABEL: Record<number, string> = {
+  0:  'fundamental',
+  1:  '2ª menor',
+  2:  '2ª mayor',
+  3:  '3ª menor',
+  4:  '3ª mayor',
+  5:  '4ª justa',
+  6:  '5ª disminuida',
+  7:  '5ª justa',
+  8:  '5ª aumentada',
+  9:  '6ª mayor',
+  10: '7ª menor',
+  11: '7ª mayor',
+  14: '9ª mayor',
+}
+
+/** Spanish label for a chord interval (semitones from root). */
+export function intervalLabel(semitones: number): string {
+  return INTERVAL_LABEL[semitones] ?? `${semitones} semitonos`
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Voicing generation
 // A voicing is one playable way to fret the chord on the current tuning.

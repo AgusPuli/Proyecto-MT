@@ -10,7 +10,6 @@ const MODES: { key: LabelMode; label: string }[] = [
   { key: 'solfege',  label: 'Do-Re-Mi'},
   { key: 'interval', label: 'Interval'},
   { key: 'degree',   label: 'Degree'  },
-  { key: 'finger',   label: 'Finger'  },
 ]
 
 export default function LabelToggle({ value, onChange }: LabelToggleProps) {

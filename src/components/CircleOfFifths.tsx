@@ -147,14 +147,12 @@ function distLabel(dist: number): { color: string; label: string } {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const CX = 250, CY = 250
-const R_OUTER_DECO   = 242   // decorative tick ring
-const R_LABEL_MAJOR  = 218
-const R_LABEL_MINOR  = 182
-const R_ARC_OUTER    = 162
-const R_ARC_INNER    = 124
-const R_ACC          = 100
-const R_CENTER       = 78
-const GAP = 2.5
+const R_ARC_OUTER    = 228
+const R_ARC_INNER    = 136
+const R_LABEL_MAJOR  = 194
+const R_LABEL_MINOR  = 158
+const R_CENTER       = 104
+const GAP = 3.5
 
 function polar(r: number, angleDeg: number): [number, number] {
   const rad = (angleDeg - 90) * (Math.PI / 180)
@@ -325,12 +323,6 @@ export default function CircleOfFifths({
     else setLocalIdx(idx)
   }
 
-  function accLabel(e: CircleEntry): string {
-    if (e.sharps > 0 && e.flats > 0) return `${e.sharps}#/${e.flats}b`
-    if (e.sharps > 0) return `${e.sharps}♯`
-    if (e.flats  > 0) return `${e.flats}♭`
-    return '○'
-  }
   function armaduraText(e: CircleEntry): string {
     if (e.sharps === 0 && e.flats === 0) return 'Sin alteraciones'
     if (e.sharps > 0 && e.flats > 0) return `${e.sharps}♯ / ${e.flats}♭`
@@ -380,33 +372,10 @@ export default function CircleOfFifths({
                 <stop offset="0%"   stopColor="var(--circle-center-inner)" />
                 <stop offset="100%" stopColor="var(--circle-center)" />
               </radialGradient>
-              {/* Glow filter for selected sector outline */}
-              <filter id="cof-glow" x="-40%" y="-40%" width="180%" height="180%">
-                <feGaussianBlur stdDeviation="4" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
             </defs>
 
             {/* Background disc */}
             <circle cx={CX} cy={CY} r="248" fill="url(#cof-bg)" />
-
-            {/* Outer decorative ring */}
-            <circle cx={CX} cy={CY} r={R_OUTER_DECO}
-              fill="none" stroke="var(--circle-outer-ring)" strokeWidth="1.5" opacity="0.7" />
-
-            {/* Tick marks at each key position */}
-            {CIRCLE.map((_, i) => {
-              const angle = i * 30
-              const [x1, y1] = polar(R_OUTER_DECO - 7, angle)
-              const [x2, y2] = polar(R_OUTER_DECO + 1, angle)
-              return (
-                <line key={`tick-${i}`} x1={x1} y1={y1} x2={x2} y2={y2}
-                  stroke="var(--circle-outer-ring)" strokeWidth="2" opacity="0.8" />
-              )
-            })}
 
             {/* 12 sectors */}
             {CIRCLE.map((e, i) => {
@@ -416,12 +385,11 @@ export default function CircleOfFifths({
               const fill  = isHov && !isSel ? 'var(--circle-hover)' : distFill(dist)
 
               const majorTextColor = isSel ? 'var(--circle-text-selected)' : 'var(--circle-text-primary)'
+
               const minorTextColor = isSel ? 'var(--circle-text-selected)' : 'var(--circle-text-secondary)'
-              const accColor       = isSel ? 'var(--circle-text-selected)' : distLabelColor(dist)
 
               const [lmx, lmy] = polar(R_LABEL_MAJOR, e.angle)
               const [lnx, lny] = polar(R_LABEL_MINOR, e.angle)
-              const [lax, lay] = polar(R_ACC, e.angle)
 
               return (
                 <g key={i} style={{ cursor: 'pointer' }}
@@ -429,77 +397,34 @@ export default function CircleOfFifths({
                   onMouseEnter={() => setHovered(i)}
                   onMouseLeave={() => setHovered(null)}>
 
-                  {/* Sector fill */}
+                  {/* Sector fill — separated by GAP only, no border stroke */}
                   <path d={sector(R_ARC_OUTER, R_ARC_INNER, e.angle)}
                     fill={fill}
-                    stroke="var(--circle-bg)" strokeWidth="1.5"
+                    stroke={isSel ? 'var(--circle-text-selected)' : 'none'}
+                    strokeWidth={isSel ? 2 : 0}
                     style={{ transition: 'fill 0.2s ease' }} />
 
-                  {/* Selected glow outline */}
-                  {isSel && (
-                    <path d={sector(R_ARC_OUTER, R_ARC_INNER, e.angle)}
-                      fill="none"
-                      stroke="var(--circle-text-selected)"
-                      strokeWidth="2.5"
-                      style={{
-                        filter: 'url(#cof-glow)',
-                        pointerEvents: 'none',
-                        opacity: 0.85,
-                      }} />
-                  )}
-
-                  {/* Hover subtle outline */}
-                  {isHov && !isSel && (
-                    <path d={sector(R_ARC_OUTER, R_ARC_INNER, e.angle)}
-                      fill="none"
-                      stroke="var(--circle-text-secondary)"
-                      strokeWidth="1"
-                      style={{ pointerEvents: 'none', opacity: 0.4 }} />
-                  )}
-
-                  {/* Major key label */}
+                  {/* Key label */}
                   <text x={lmx} y={lmy} textAnchor="middle" dominantBaseline="middle"
                     fill={majorTextColor}
-                    fontSize={isSel ? 13.5 : 11.5}
+                    fontSize={isSel ? 22 : 17}
                     fontWeight={isSel ? '800' : '600'}
                     style={{ userSelect: 'none', letterSpacing: isSel ? '0.02em' : '0' }}>
                     {e.major}
                   </text>
 
-                  {/* Minor label */}
+                  {/* Relative minor */}
                   <text x={lnx} y={lny} textAnchor="middle" dominantBaseline="middle"
                     fill={minorTextColor}
-                    fontSize={isSel ? 10.5 : 9.5}
-                    fontWeight={isSel ? '700' : '400'}
+                    fontSize={isSel ? 12 : 10.5}
+                    fontWeight={isSel ? '700' : '500'}
+                    opacity={isSel ? 1 : 0.85}
                     style={{ userSelect: 'none' }}>
                     {e.minor} m
-                  </text>
-
-                  {/* Sharps / flats badge */}
-                  <text x={lax} y={lay} textAnchor="middle" dominantBaseline="middle"
-                    fill={accColor} fontSize={9} fontWeight="600"
-                    style={{ userSelect: 'none' }}>
-                    {accLabel(e)}
                   </text>
                 </g>
               )
             })}
-
-            {/* Hover tooltip — shared note count */}
-            {hovered !== null && hovered !== selectedIdx && (() => {
-              const he   = CIRCLE[hovered]
-              const dist = circleDistance(selectedIdx, hovered)
-              const info = distLabel(dist)
-              const [tx, ty] = polar(R_ARC_OUTER + 22, he.angle)
-              return (
-                <text x={tx} y={ty} textAnchor="middle" dominantBaseline="middle"
-                  fontSize={9} fontWeight="700"
-                  fill={info.color}
-                  style={{ pointerEvents: 'none' }}>
-                  {info.label}
-                </text>
-              )
-            })()}
 
             {/* Inner divider ring between sectors and center */}
             <circle cx={CX} cy={CY} r={R_ARC_INNER}
@@ -511,25 +436,25 @@ export default function CircleOfFifths({
               stroke="var(--circle-center-stroke)" strokeWidth="1.5" />
 
             {/* Center — key name */}
-            <text x={CX} y={CY - 17} textAnchor="middle"
+            <text x={CX} y={CY - 20} textAnchor="middle"
               fill="var(--circle-text-selected)"
-              fontSize={24} fontWeight="900"
+              fontSize={32} fontWeight="900"
               style={{ userSelect: 'none', letterSpacing: '0.03em' }}>
               {entry.major}
             </text>
 
             {/* Center — relative minor */}
-            <text x={CX} y={CY + 5} textAnchor="middle"
+            <text x={CX} y={CY + 8} textAnchor="middle"
               fill="var(--circle-text-secondary)"
-              fontSize={11}
+              fontSize={13}
               style={{ userSelect: 'none' }}>
               rel. {entry.minor} m
             </text>
 
             {/* Center — armadura */}
-            <text x={CX} y={CY + 21} textAnchor="middle"
+            <text x={CX} y={CY + 27} textAnchor="middle"
               fill="var(--circle-text-muted)"
-              fontSize={9.5}
+              fontSize={11}
               style={{ userSelect: 'none' }}>
               {armaduraText(entry)}
             </text>

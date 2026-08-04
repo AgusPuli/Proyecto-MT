@@ -69,6 +69,7 @@ function shutdownPlugin(): Plugin {
 
 export default defineConfig({
   plugins: [react(), heartbeatPlugin(), shutdownPlugin()],
+  base: './',
   server: {
     host: '127.0.0.1',  // nunca accesible desde la red, solo localhost
     port: 5173,
