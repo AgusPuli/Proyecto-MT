@@ -11,6 +11,7 @@ import {
   type ChordQuality,
 } from '../data/chords'
 import ChordDiagram from './ChordDiagram'
+import PianoChordDiagram from './PianoChordDiagram'
 import Wheel, { type WheelItem } from './ChordWheel'
 import type { NoteName } from '../types'
 
@@ -19,6 +20,8 @@ interface ChordExplorerProps {
   onClose: () => void
   tuning: NoteName[]
   totalFrets?: number
+  /** 'guitar' muestra diagramas de mástil; 'piano', inversiones en el teclado. */
+  mode?: 'guitar' | 'piano'
 }
 
 type Step = 'note' | 'quality' | 'voicings'
@@ -32,6 +35,7 @@ export default function ChordExplorer({
   onClose,
   tuning,
   totalFrets = 15,
+  mode = 'guitar',
 }: ChordExplorerProps) {
   const [step, setStep] = useState<Step>('note')
   const [note, setNote] = useState<NoteName | null>(null)
@@ -59,9 +63,9 @@ export default function ChordExplorer({
   }, [visible, onClose])
 
   const voicings = useMemo(() => {
-    if (!note || !quality) return []
+    if (!note || !quality || mode === 'piano') return []
     return generateChordVoicings(note, quality.intervals, tuning, totalFrets)
-  }, [note, quality, tuning, totalFrets])
+  }, [note, quality, tuning, totalFrets, mode])
 
   if (!visible) return null
 
@@ -105,7 +109,7 @@ export default function ChordExplorer({
         active={step === 'voicings'}
         done={false}
         disabled={!quality}
-        label="Formas"
+        label={mode === 'piano' ? 'Inversiones' : 'Formas'}
         onClick={() => quality && setStep('voicings')}
       />
     </div>
@@ -133,7 +137,9 @@ export default function ChordExplorer({
               </svg>
             </button>
           )}
-          <span className="font-black text-amber-400 text-sm sm:text-base flex-shrink-0">🎸 Acordes</span>
+          <span className="font-black text-amber-400 text-sm sm:text-base flex-shrink-0">
+            {mode === 'piano' ? '🎹' : '🎸'} Acordes
+          </span>
           <div className="h-5 w-px bg-gray-700 hidden sm:block" />
           <div className="flex-1 min-w-0 overflow-x-auto">{headerCrumb}</div>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-200 text-xl leading-none flex-shrink-0">✕</button>
@@ -195,7 +201,9 @@ export default function ChordExplorer({
 
           {/* STEP 3 — voicings */}
           {step === 'voicings' && note && quality && (
-            <VoicingsView note={note} quality={quality} tuning={tuning} voicings={voicings} />
+            mode === 'piano'
+              ? <PianoVoicingsView note={note} quality={quality} />
+              : <VoicingsView note={note} quality={quality} tuning={tuning} voicings={voicings} />
           )}
         </div>
       </div>
@@ -303,6 +311,93 @@ function VoicingsView({
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Vista de piano — fundamental e inversiones sobre el teclado
+// ─────────────────────────────────────────────────────────────────────────────
+
+const INVERSION_LABEL = ['Estado fundamental', '1ª inversión', '2ª inversión', '3ª inversión', '4ª inversión']
+
+function PianoVoicingsView({ note, quality }: { note: NoteName; quality: ChordQuality }) {
+  const notes = getChordNotes(note, quality)
+  const cat   = CATEGORY_COLOR[quality.category]
+  const rootPc = CHROMATIC_NOTES.indexOf(note)
+
+  // Estado fundamental: cada intervalo por encima de la fundamental.
+  // Inversión k: las k notas más graves suben una octava.
+  const base = quality.intervals.map(iv => rootPc + iv)
+  const inversions = base.map((_, k) =>
+    base.map((p, i) => (i < k ? p + 12 : p))
+  )
+  const maxPos  = Math.max(...inversions[inversions.length - 1])
+  const octaves = Math.max(2, Math.floor(maxPos / 12) + 1)
+
+  return (
+    <div className="space-y-5">
+      {/* Resumen del acorde */}
+      <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
+        <div>
+          <h2 className="text-3xl font-black leading-none" style={{ color: cat.text }}>
+            {chordName(note, quality)}
+          </h2>
+          <p className="text-xs text-gray-500 mt-1">{quality.name} · {quality.desc}</p>
+        </div>
+        <div className="flex flex-wrap gap-1.5 ml-auto">
+          {notes.map((nn, i) => (
+            <span key={`${nn}-${i}`}
+              className={`flex flex-col items-center px-2.5 py-1 rounded-md border ${
+                i === 0
+                  ? 'bg-blue-900/40 text-blue-300 border-blue-700/50'
+                  : 'bg-gray-800 text-gray-300 border-gray-700/50'
+              }`}>
+              <span className="text-xs font-bold">{nn}</span>
+              <span className="text-[9px] opacity-70 whitespace-nowrap">
+                {intervalLabel(quality.intervals[i])}
+              </span>
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Leyenda */}
+      <div className="flex items-center gap-4 text-[11px] text-gray-500">
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-full inline-block" style={{ background: '#3b82f6' }} /> Fundamental
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-full inline-block" style={{ background: '#14b8a6' }} /> Nota del acorde
+        </span>
+        <span className="ml-auto hidden sm:inline">La nota más grave define la inversión</span>
+      </div>
+
+      {/* Teclados */}
+      <div className="space-y-4">
+        {inversions.map((positions, k) => {
+          const bassPos = Math.min(...positions)
+          return (
+            <div key={k}
+              className="p-3 rounded-xl bg-gray-800/40 border border-gray-700/50 hover:border-teal-700/60 transition-colors">
+              <div className="flex items-baseline gap-2 mb-2">
+                <span className="text-xs font-bold text-gray-300">{INVERSION_LABEL[k] ?? `Inversión ${k}`}</span>
+                <span className="text-[11px] text-gray-500">
+                  bajo: {CHROMATIC_NOTES[bassPos % 12]}
+                  {k > 0 && ` · ${chordName(note, quality)}/${CHROMATIC_NOTES[bassPos % 12]}`}
+                </span>
+              </div>
+              <div className="overflow-x-auto">
+                <PianoChordDiagram
+                  positions={positions}
+                  rootPosition={positions[0]}
+                  octaves={octaves}
+                />
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }

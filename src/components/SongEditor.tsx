@@ -1,14 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { NoteName } from '../types'
-import { CHROMATIC_NOTES } from '../data/notes'
+import { CHROMATIC_NOTES, keyPrefersFlats, spellNote } from '../data/notes'
 import { parseChord } from '../data/chordParser'
-import { analyzeChord, getDiatonicChords, keyLabel, type ChordAnalysis, type KeyMode, type SongKey } from '../data/harmony'
-import { parseSongBody, replaceChordAt, insertChordAtOffset, extractChordSequence, type ChordToken } from '../data/songParser'
+import { generateChordVoicings, getChordNotes } from '../data/chords'
+import {
+  analyzeChord, countOutsiders, detectKey, getDiatonicChords, keyLabel,
+  type ChordAnalysis, type KeyMode, type SongKey,
+} from '../data/harmony'
+import {
+  parseSongBody, replaceChordAt, insertChordAtOffset, extractChordSequence,
+  transposeSongBody, type ChordToken,
+} from '../data/songParser'
 import { getSongStorage, newSong, type Song, type SongMeta } from '../data/songStorage'
 import SongPages, { analysisKey } from './SongPages'
 import SongAssistantPanel from './SongAssistantPanel'
 import ChordPickerModal from './ChordPickerModal'
+import ChordDiagram from './ChordDiagram'
+import PianoChordDiagram from './PianoChordDiagram'
+import SongStageView from './SongStageView'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SongEditor — full-screen overlay.
@@ -18,6 +28,8 @@ import ChordPickerModal from './ChordPickerModal'
 interface SongEditorProps {
   origin: { x: number; y: number }
   onClose: () => void
+  /** Afinación activa en la app — se usa para los diagramas de acorde. */
+  tuning: NoteName[]
 }
 
 type ViewMode = 'edit' | 'view' | 'split'
@@ -120,11 +132,71 @@ function SongLibrary({
 
 // ── Chord edit popover (click a chord in the sheet) ─────────────────────────
 
+/** Cómo suena y cómo se toca el acorde que se está editando. */
+function ChordPreview({ name, tuning, useFlats }: { name: string; tuning: NoteName[]; useFlats: boolean }) {
+  const chord = parseChord(name)
+  const voicings = useMemo(
+    () => (chord ? generateChordVoicings(chord.root, chord.quality.intervals, tuning, 12).slice(0, 3) : []),
+    [chord?.root, chord?.quality.id, tuning],
+  )
+
+  if (!chord) {
+    return (
+      <div className="h-[190px] flex items-center justify-center text-xs text-gray-600 border-t border-gray-800 mt-3">
+        Escribí un acorde para ver cómo se toca
+      </div>
+    )
+  }
+
+  const notes = getChordNotes(chord.root, chord.quality)
+  const rootPc = CHROMATIC_NOTES.indexOf(chord.root)
+  const positions = chord.quality.intervals.map(iv => rootPc + iv)
+
+  return (
+    <div className="border-t border-gray-800 mt-3 pt-3 space-y-3">
+      {/* Notas */}
+      <div className="flex flex-wrap gap-1">
+        {notes.map((n, i) => (
+          <span key={`${n}-${i}`}
+            className={`px-1.5 py-0.5 rounded text-[11px] font-bold border ${
+              i === 0
+                ? 'bg-amber-900/40 text-amber-300 border-amber-700/50'
+                : 'bg-gray-800 text-gray-300 border-gray-700/50'}`}>
+            {spellNote(n, useFlats)}
+          </span>
+        ))}
+      </div>
+
+      {/* Teclado */}
+      <div className="overflow-x-auto">
+        <PianoChordDiagram
+          positions={positions}
+          rootPosition={positions[0]}
+          octaves={Math.max(2, Math.floor(Math.max(...positions) / 12) + 1)}
+          keyW={13}
+        />
+      </div>
+
+      {/* Mástil */}
+      {voicings.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {voicings.map((v, i) => (
+            <div key={i} className="shrink-0 p-1.5 rounded-lg bg-gray-800/40 border border-gray-700/50">
+              <ChordDiagram voicing={v} tuning={tuning} root={chord.root} scale={0.72} />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ChordEditModal({
-  initial, songKey, onConfirm, onDelete, onDismiss,
+  initial, songKey, tuning, onConfirm, onDelete, onDismiss,
 }: {
   initial: string
   songKey: SongKey
+  tuning: NoteName[]
   onConfirm: (name: string) => void
   onDelete: () => void
   onDismiss: () => void
@@ -133,6 +205,8 @@ function ChordEditModal({
   const [pickerOpen, setPickerOpen] = useState(false)
   const valid = parseChord(value) !== null
   const diatonic = getDiatonicChords(songKey)
+  const useFlats = keyPrefersFlats(CHROMATIC_NOTES.indexOf(songKey.root))
+  const spell = (n: string) => spellNote(n, useFlats)
 
   return (
     <motion.div
@@ -144,7 +218,7 @@ function ChordEditModal({
       transition={{ duration: 0.18 }}
     >
       <motion.div
-        className="bg-gray-900 border border-gray-700 rounded-lg p-4 w-80"
+        className="bg-gray-900 border border-gray-700 rounded-lg p-4 w-[24rem] max-h-[88vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
         initial={{ opacity: 0, scale: 0.94, y: 8 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -172,13 +246,18 @@ function ChordEditModal({
           <div className="text-xs text-red-400 mt-1">No es un acorde válido</div>
         )}
         <div className="flex flex-wrap gap-1 mt-3">
-          {diatonic.map(c => (
-            <button key={c.roman} onClick={() => setValue(c.name)}
-              className="px-2 py-0.5 text-xs rounded bg-gray-800 border border-gray-700 text-amber-400 hover:bg-gray-700 focus:outline-none">
-              {c.name}
-            </button>
-          ))}
+          {diatonic.map(c => {
+            const label = spell(c.root) + c.name.slice(c.root.length)
+            return (
+              <button key={c.roman} onClick={() => setValue(label)}
+                className="px-2 py-0.5 text-xs rounded bg-gray-800 border border-gray-700 text-amber-400 hover:bg-gray-700 focus:outline-none">
+                {label}
+              </button>
+            )
+          })}
         </div>
+        <ChordPreview name={value} tuning={tuning} useFlats={useFlats} />
+
         <ChordPickerModal
           visible={pickerOpen}
           onPick={name => setValue(name)}
@@ -207,7 +286,7 @@ function ChordEditModal({
 
 // ── Main editor ──────────────────────────────────────────────────────────────
 
-export default function SongEditor({ origin, onClose }: SongEditorProps) {
+export default function SongEditor({ origin, onClose, tuning }: SongEditorProps) {
   const storage = getSongStorage()
 
   const [songs, setSongs] = useState<SongMeta[]>([])
@@ -218,6 +297,7 @@ export default function SongEditor({ origin, onClose }: SongEditorProps) {
   const [saveState, setSaveState] = useState<'saved' | 'saving' | 'error'>('saved')
   const [editingChord, setEditingChord] = useState<{ line: number; token: ChordToken } | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [stageOpen, setStageOpen] = useState(false)
   // Tonalidad local del panel de acordes — independiente de la tonalidad de la
   // canción, para poder explorar acordes de otra tonalidad sin afectarla.
   const [panelKey, setPanelKey] = useState<SongKey>({ root: 'C', mode: 'major' })
@@ -291,10 +371,19 @@ export default function SongEditor({ origin, onClose }: SongEditorProps) {
     return map
   }, [parsed, songKey.root, songKey.mode])
 
-  const lastChord = useMemo(() => {
-    const seq = extractChordSequence(parsed)
-    return seq.length ? seq[seq.length - 1] : null
-  }, [parsed])
+  const sequence = useMemo(() => extractChordSequence(parsed), [parsed])
+  const lastChord = sequence.length ? sequence[sequence.length - 1] : null
+
+  // Tonalidad sugerida por los acordes escritos + cuántos quedan fuera de la actual
+  const guess = useMemo(() => detectKey(sequence), [sequence])
+  const outsiders = useMemo(() => countOutsiders(sequence, songKey), [sequence, songKey.root, songKey.mode])
+  const guessDiffers = guess !== null &&
+    (guess.key.root !== songKey.root || guess.key.mode !== songKey.mode)
+
+  // Grafía del encabezado: bemoles en tonalidades de bemoles, para que coincida
+  // con cómo quedan escritos los acordes tras transponer.
+  const useFlats = keyPrefersFlats(CHROMATIC_NOTES.indexOf(songKey.root))
+  const spell = (n: string) => spellNote(n, useFlats)
 
   // ── Actions ──
   async function openSong(id: string) {
@@ -347,6 +436,29 @@ export default function SongEditor({ origin, onClose }: SongEditorProps) {
         cursorRef.current = pos
       }
     })
+  }
+
+  /** Transpone el cuerpo y mueve la tonalidad de la canción el mismo intervalo. */
+  function transpose(semitones: number) {
+    if (!current) return
+    const rootPc = CHROMATIC_NOTES.indexOf(songKey.root)
+    const newPc = ((rootPc + semitones) % 12 + 12) % 12
+    const useFlats = keyPrefersFlats(newPc)
+    const newRoot = CHROMATIC_NOTES[newPc]
+    update({
+      body: transposeSongBody(current.body, semitones, useFlats),
+      key: { ...songKey, root: newRoot },
+    })
+    setPanelKey({ ...songKey, root: newRoot })
+  }
+
+  /** Lleva la canción a una tonalidad concreta por el camino más corto. */
+  function transposeTo(root: NoteName) {
+    const from = CHROMATIC_NOTES.indexOf(songKey.root)
+    const to = CHROMATIC_NOTES.indexOf(root)
+    let diff = ((to - from) % 12 + 12) % 12
+    if (diff > 6) diff -= 12          // bajar 2 en vez de subir 10
+    if (diff !== 0) transpose(diff)
   }
 
   function handleClose() {
@@ -410,7 +522,7 @@ export default function SongEditor({ origin, onClose }: SongEditorProps) {
               value={songKey.root}
               onChange={e => update({ key: { ...songKey, root: e.target.value as NoteName } })}
               className="px-1.5 py-1 rounded bg-gray-800 border border-gray-700 text-gray-200 focus:outline-none">
-              {CHROMATIC_NOTES.map(n => <option key={n} value={n}>{n}</option>)}
+              {CHROMATIC_NOTES.map(n => <option key={n} value={n}>{spell(n)}</option>)}
             </select>
             <select
               value={songKey.mode}
@@ -421,10 +533,48 @@ export default function SongEditor({ origin, onClose }: SongEditorProps) {
             </select>
           </div>
 
+          {/* Transposición — mueve los acordes Y la tonalidad */}
+          <div className="flex items-center gap-1">
+            <span className="text-gray-500 text-xs">Transponer:</span>
+            <div className="flex items-center gap-1 bg-gray-800/70 border border-gray-700 rounded-md p-0.5">
+              <button onClick={() => transpose(-1)} title="Bajar un semitono"
+                className="w-6 h-6 rounded bg-gray-800 text-gray-300 hover:bg-amber-600 hover:text-white text-sm font-bold focus:outline-none">−</button>
+              <select
+                value={songKey.root}
+                onChange={e => transposeTo(e.target.value as NoteName)}
+                title="Llevar la canción a otra tonalidad"
+                className="px-1 py-0.5 rounded bg-gray-800 border border-gray-700 text-gray-200 text-xs focus:outline-none">
+                {CHROMATIC_NOTES.map(n => <option key={n} value={n}>{spell(n)}</option>)}
+              </select>
+              <button onClick={() => transpose(1)} title="Subir un semitono"
+                className="w-6 h-6 rounded bg-gray-800 text-gray-300 hover:bg-amber-600 hover:text-white text-sm font-bold focus:outline-none">+</button>
+            </div>
+          </div>
+
+          {/* Tonalidad detectada a partir de los acordes escritos */}
+          {guess && guessDiffers && guess.confidence > 0.08 && (
+            <button
+              onClick={() => { update({ key: guess.key }); setPanelKey(guess.key) }}
+              title="Aplicar la tonalidad que sugieren los acordes escritos"
+              className="px-2 py-1 text-[11px] rounded-full bg-teal-900/50 text-teal-300 border border-teal-700/50
+                         hover:bg-teal-800/60 transition-colors focus:outline-none whitespace-nowrap">
+              🎯 Parece {keyLabel(guess.key)} — aplicar
+            </button>
+          )}
+          {outsiders > 0 && (
+            <span
+              title="Acordes que no pertenecen a la tonalidad actual (se ven en rojo en la hoja)"
+              className="px-2 py-1 text-[11px] rounded-full bg-red-900/30 text-red-300 border border-red-800/50 whitespace-nowrap">
+              {outsiders} fuera de tonalidad
+            </span>
+          )}
+
           {/* Apunte: acordes diatónicos de la tonalidad de la canción */}
           <div className="hidden lg:flex items-center gap-1 text-[11px] text-gray-500 border-l border-gray-800 pl-3">
             {getDiatonicChords(songKey).map(c => (
-              <span key={c.roman} className="text-amber-400/80 font-semibold whitespace-nowrap">{c.name}</span>
+              <span key={c.roman} className="text-amber-400/80 font-semibold whitespace-nowrap">
+                {spell(c.root) + c.name.slice(c.root.length)}
+              </span>
             ))}
           </div>
 
@@ -449,6 +599,12 @@ export default function SongEditor({ origin, onClose }: SongEditorProps) {
               </button>
             ))}
           </div>
+
+          <button onClick={() => setStageOpen(true)}
+            title="Modo atril: letra grande y autoscroll al tempo"
+            className="px-2 py-1 text-xs font-medium rounded bg-teal-700 text-white hover:bg-teal-600 transition-colors focus:outline-none">
+            🎤 Atril
+          </button>
 
           <button onClick={handlePrint}
             title="Imprimir o guardar como PDF"
@@ -515,6 +671,16 @@ export default function SongEditor({ origin, onClose }: SongEditorProps) {
         </div>
       )}
 
+      {/* ── Modo atril ── */}
+      {stageOpen && current && (
+        <SongStageView
+          song={current}
+          parsed={parsed}
+          analyses={analyses}
+          onExit={() => setStageOpen(false)}
+        />
+      )}
+
       {/* ── Modals ── */}
       <AnimatePresence>
         {libraryOpen && (
@@ -546,6 +712,7 @@ export default function SongEditor({ origin, onClose }: SongEditorProps) {
             key="chord-edit"
             initial={editingChord.token.raw}
             songKey={songKey}
+            tuning={tuning}
             onConfirm={name => {
               update({ body: replaceChordAt(current.body, editingChord.line, editingChord.token.srcStart, editingChord.token.srcEnd, name) })
               setEditingChord(null)

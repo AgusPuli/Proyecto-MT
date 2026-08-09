@@ -1,4 +1,5 @@
 import { parseChord, type ParsedChord } from './chordParser'
+import { SHARP_SPELLING, spellNote } from './notes'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Song body parser — ChordPro-ish text ⇄ render model.
@@ -93,4 +94,32 @@ export function extractChordSequence(parsed: ParsedLine[]): ParsedChord[] {
     }
   }
   return out
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Transposición
+// Reescribe solo los tokens que son acordes: los títulos de sección ([Intro],
+// [Estribillo]) y el texto suelto quedan intactos. Se conserva el sufijo tal
+// como lo escribió el usuario ("Bbmaj7" +2 → "Cmaj7"), solo cambia la letra.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** "Am" +3 → "Cm". Devuelve el texto original si no es un acorde. */
+export function transposeChordName(raw: string, semitones: number, useFlats = false): string {
+  const chord = parseChord(raw)
+  if (!chord) return raw
+  const m = /^\s*([A-G][#b♭♯]?)(.*)$/.exec(raw.trim())
+  if (!m) return raw
+  const suffix = m[2]
+  const fromPc = SHARP_SPELLING.indexOf(chord.root)
+  const toPc = ((fromPc + semitones) % 12 + 12) % 12
+  return spellNote(SHARP_SPELLING[toPc], useFlats) + suffix
+}
+
+/** Transpone todos los acordes del cuerpo de la canción. */
+export function transposeSongBody(body: string, semitones: number, useFlats = false): string {
+  if (semitones === 0) return body
+  return body.replace(/\[([^\]\n]*)\]/g, (whole, inner: string) => {
+    const moved = transposeChordName(inner, semitones, useFlats)
+    return moved === inner ? whole : `[${moved}]`
+  })
 }

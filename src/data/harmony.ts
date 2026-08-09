@@ -1,5 +1,5 @@
 import type { NoteName } from '../types'
-import { CHROMATIC_NOTES } from './notes'
+import { CHROMATIC_NOTES, keyPrefersFlats, spellNote } from './notes'
 import { CHORD_QUALITIES } from './chords'
 import type { ParsedChord } from './chordParser'
 
@@ -104,7 +104,8 @@ function displayName(root: NoteName, qualityId: string): string {
 // ── Public API ───────────────────────────────────────────────────────────────
 
 export function keyLabel(key: SongKey): string {
-  return `${key.root} ${key.mode === 'major' ? 'mayor' : 'menor'}`
+  const spelled = spellNote(key.root, keyPrefersFlats(pcOf(key.root)))
+  return `${spelled} ${key.mode === 'major' ? 'mayor' : 'menor'}`
 }
 
 /** The 7 diatonic triads of the key (natural minor for minor keys). */
@@ -319,4 +320,73 @@ export function suggestNextChords(last: ParsedChord | null, key: SongKey): Sugge
     chord: chordForDegree(deg),
     reason: MOVE_REASON[`${fromDegree}-${deg}`] ?? '',
   }))
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Detección automática de tonalidad
+// Puntúa las 24 tonalidades contra los acordes escritos: cuanto más encajan
+// como diatónicos (y cuanto más "suena a casa" el último acorde), más puntos.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface KeyGuess {
+  key: SongKey
+  score: number
+  /** 0..1 — cuánto le saca la mejor tonalidad a la segunda. */
+  confidence: number
+  /** Acordes que quedan fuera de la tonalidad ganadora. */
+  outsiders: number
+}
+
+const RELATION_SCORE: Record<ChordRelation, number> = {
+  'diatonic':           3,
+  'harmonic-minor':     2.5,
+  'secondary-dominant': 1,
+  'borrowed':           0.5,
+  'non-diatonic':      -1.5,
+}
+
+/**
+ * Adivina la tonalidad a partir de la secuencia de acordes de la canción.
+ * Devuelve null si no hay acordes suficientes para decir algo.
+ */
+export function detectKey(chords: ParsedChord[]): KeyGuess | null {
+  if (chords.length < 2) return null
+
+  const scored: KeyGuess[] = []
+  for (const root of CHROMATIC_NOTES) {
+    for (const mode of ['major', 'minor'] as KeyMode[]) {
+      const key: SongKey = { root, mode }
+      let score = 0
+      let outsiders = 0
+      chords.forEach((c, i) => {
+        const a = analyzeChord(c, key)
+        score += RELATION_SCORE[a.relation]
+        if (a.relation === 'non-diatonic') outsiders++
+        // El primero y sobre todo el último acorde suelen ser la tónica.
+        const isTonic = pcOf(c.root) === pcOf(root)
+        if (isTonic && i === chords.length - 1) score += 3
+        if (isTonic && i === 0) score += 1.5
+        // La calidad de la tónica desempata mayor vs menor.
+        if (isTonic) {
+          const minorish = c.quality.id === 'min' || c.quality.id === 'm7'
+          const majorish = c.quality.id === 'maj' || c.quality.id === 'maj7' || c.quality.id === '6'
+          if (mode === 'minor' && minorish) score += 1
+          if (mode === 'major' && majorish) score += 1
+        }
+      })
+      scored.push({ key, score, confidence: 0, outsiders })
+    }
+  }
+
+  scored.sort((a, b) => b.score - a.score)
+  const best = scored[0]
+  const runnerUp = scored[1]
+  const spread = best.score - runnerUp.score
+  best.confidence = Math.max(0, Math.min(1, spread / Math.max(4, chords.length)))
+  return best
+}
+
+/** Cuántos acordes de la lista quedan fuera de la tonalidad dada. */
+export function countOutsiders(chords: ParsedChord[], key: SongKey): number {
+  return chords.filter(c => analyzeChord(c, key).relation === 'non-diatonic').length
 }

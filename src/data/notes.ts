@@ -153,3 +153,25 @@ export function computeFretboard(
 
   return notes
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Grafía de las notas
+// Internamente todo se normaliza a sostenidos (CHROMATIC_NOTES). Estas tablas
+// solo cambian cómo se MUESTRA una nota, para que en tonalidades de bemoles se
+// lea "Ab" y no "G#", que es como las escriben los músicos.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const SHARP_SPELLING = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+export const FLAT_SPELLING  = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B']
+
+/** Tonalidades que se escriben naturalmente con bemoles: F, Bb, Eb, Ab, Db. */
+export function keyPrefersFlats(rootPc: number): boolean {
+  return [1, 3, 5, 8, 10].includes(((rootPc % 12) + 12) % 12)
+}
+
+/** Devuelve la grafía pedida para una nota ya normalizada a sostenidos. */
+export function spellNote(note: string, useFlats: boolean): string {
+  const pc = SHARP_SPELLING.indexOf(note)
+  if (pc < 0) return note
+  return (useFlats ? FLAT_SPELLING : SHARP_SPELLING)[pc]
+}

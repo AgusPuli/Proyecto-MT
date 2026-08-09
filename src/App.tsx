@@ -50,7 +50,7 @@ export default function App() {
   const [off, setOff]               = useState(false)
   const [chordFilter, setChordFilter]   = useState<ChordFilter>('all')
   const [showAllNotes, setShowAllNotes] = useState(false)
-  const [syncCircle, setSyncCircle] = useState(false)
+  const [syncCircle, setSyncCircle] = useState(true)
   const [practiceOpen, setPracticeOpen] = useState(false)
   const [songsOpen, setSongsOpen]   = useState(false)
   const [songsOrigin, setSongsOrigin] = useState({ x: 0, y: 0 })
@@ -294,11 +294,11 @@ export default function App() {
                     <button
                       onClick={() => setChordsOpen(true)}
                       title="Explorar acordes"
-                      className="flex-shrink-0 self-stretch w-[72px] flex flex-col items-center justify-center gap-2 rounded-xl
-                                 bg-gradient-to-b from-teal-600 to-teal-700 text-white shadow-lg shadow-teal-900/40
-                                 hover:from-teal-500 hover:to-teal-600 hover:shadow-teal-800/50 transition-all focus:outline-none"
+                      className="flex-shrink-0 self-stretch w-[84px] flex flex-col items-center justify-center gap-2 rounded-xl
+                                 bg-gradient-to-b from-violet-600 to-violet-700 text-white shadow-lg shadow-violet-900/40
+                                 hover:from-violet-500 hover:to-violet-600 hover:shadow-violet-800/50 transition-all focus:outline-none"
                     >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-7 h-7">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} className="w-7 h-7">
                         <rect x="5" y="4" width="14" height="16" rx="1.5" />
                         <line x1="9.67" y1="4" x2="9.67" y2="20" />
                         <line x1="14.33" y1="4" x2="14.33" y2="20" />
@@ -313,7 +313,32 @@ export default function App() {
                 <p className="mt-3 text-xs text-gray-600">Click any fret to set it as the root note.</p>
               </>
             )}
-            <ScaleTones root={root} scale={selectedScale} />
+
+            {instrument === 'piano' ? (
+              <div className="flex items-stretch gap-3">
+                <div className="flex-1 min-w-0">
+                  <ScaleTones root={root} scale={selectedScale} />
+                </div>
+                <button
+                  onClick={() => setChordsOpen(true)}
+                  title="Explorar acordes en el teclado"
+                  className="flex-shrink-0 self-stretch mt-4 w-[84px] flex flex-col items-center justify-center gap-2 rounded-xl
+                             bg-gradient-to-b from-violet-600 to-violet-700 text-white shadow-lg shadow-violet-900/40
+                             hover:from-violet-500 hover:to-violet-600 hover:shadow-violet-800/50 transition-all focus:outline-none"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} className="w-7 h-7">
+                    <rect x="3" y="5" width="18" height="14" rx="1.5" />
+                    <line x1="9" y1="5" x2="9" y2="19" />
+                    <line x1="15" y1="5" x2="15" y2="19" />
+                    <rect x="6.6" y="5" width="2.6" height="8" fill="currentColor" stroke="none" />
+                    <rect x="12.6" y="5" width="2.6" height="8" fill="currentColor" stroke="none" />
+                  </svg>
+                  <span className="text-xs font-bold tracking-wide">Acordes</span>
+                </button>
+              </div>
+            ) : (
+              <ScaleTones root={root} scale={selectedScale} />
+            )}
           </div>
 
           <CircleOfFifths
@@ -336,6 +361,7 @@ export default function App() {
               key="song-editor"
               origin={songsOrigin}
               onClose={() => setSongsOpen(false)}
+              tuning={currentTuning}
             />
           )}
         </AnimatePresence>
@@ -345,6 +371,7 @@ export default function App() {
         onClose={() => setChordsOpen(false)}
         tuning={currentTuning}
         totalFrets={TOTAL_FRETS}
+        mode={instrument === 'piano' ? 'piano' : 'guitar'}
       />
 
       {/* Footer */}

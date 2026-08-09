@@ -39,12 +39,12 @@ const RELATION_COLOR: Record<ChordRelation, string> = {
   'non-diatonic':       'text-red-400 print:text-red-700',
 }
 
-interface Segment {
+export interface Segment {
   chord: ChordToken | null
   text: string
 }
 
-function buildSegments(lyrics: string, chords: ChordToken[]): Segment[] {
+export function buildSegments(lyrics: string, chords: ChordToken[]): Segment[] {
   if (chords.length === 0) return [{ chord: null, text: lyrics }]
   const segments: Segment[] = []
   if (chords[0].charIndex > 0) {
