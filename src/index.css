@@ -158,6 +158,15 @@ body {
 .hover\:bg-red-900\/40:hover { background-color: rgba(255,59,44,.14) !important; }
 .hover\:text-red-400:hover { color: var(--amp-red) !important; }
 
+/* La hoja de canciones (letras + acordes) es texto para leer/imprimir, no un
+   panel de ampli: sin glow, sin sombras, y colores planos también al imprimir. */
+#song-print-root, #song-print-root * {
+  text-shadow: none !important;
+}
+@media print {
+  * { text-shadow: none !important; box-shadow: none !important; }
+}
+
 /* ─────────────────────────────────────────────────────────────────────────────
    FRETBOARD NOTE DOTS — GPU-accelerated fade+scale on mount.
    Replaces the previous framer-motion spring per cell (which fired 100+
