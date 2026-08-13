@@ -150,7 +150,9 @@ export default function App() {
       <LandscapeSuggestion />
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
-      <header className="flex-shrink-0 bg-gray-900 border-b border-gray-800 px-2 py-1 flex flex-wrap items-center gap-1.5 z-20">
+      <header className="relative flex-shrink-0 amp-cloth border-b border-gray-800 px-2 py-1 flex flex-wrap items-center gap-1.5 z-20 shadow-[0_2px_10px_rgba(0,0,0,.6)]">
+        <span className="amp-screw tl" />
+        <span className="amp-screw tr" />
 
         {/* Sidebar toggle — rectángulo = pantalla, franja izquierda rellena = panel visible */}
         <button onClick={() => setSidebarOpen(v => !v)}
@@ -165,7 +167,8 @@ export default function App() {
         </button>
 
         {/* Logo */}
-        <h1 className="text-base font-black tracking-tight text-amber-400">
+        <h1 className="text-base font-black tracking-tight text-amber-400 flex items-center gap-2">
+          <span className="amp-lamp on" />
           Bass<span className="text-teal-400">Theory</span>
         </h1>
 
@@ -258,7 +261,7 @@ export default function App() {
       <div className="flex flex-1 overflow-hidden">
 
         {/* Sidebar */}
-        <aside className={`flex-shrink-0 bg-gray-900 border-r border-gray-800 overflow-y-auto transition-all duration-200 ease-in-out
+        <aside className={`flex-shrink-0 amp-chassis border-r border-gray-800 overflow-y-auto transition-all duration-200 ease-in-out
           ${sidebarOpen ? 'w-72' : 'w-0 overflow-hidden'}`}>
           <div className="p-4 space-y-8 min-w-[288px]">
             <ScaleLibrary
@@ -386,7 +389,7 @@ export default function App() {
       />
 
       {/* Footer */}
-      <footer className="flex-shrink-0 bg-gray-900 border-t border-gray-800 px-4 py-2 flex flex-wrap items-center justify-end gap-3">
+      <footer className="flex-shrink-0 amp-chassis border-t border-gray-800 px-4 py-2 flex flex-wrap items-center justify-end gap-3">
         <span className="text-xs text-gray-600">{fretboardNotes.length} notes · {TOTAL_FRETS} frets</span>
       </footer>
     </div>

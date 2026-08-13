@@ -10,6 +10,154 @@ html, body, #root {
   padding: 0;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   AMP AESTHETIC — v3
+   Look tomado de stem-splitter-private (gabinete de amplificador oscuro).
+   Todo sale de CSS: tolex picado, tela de rejilla, biseles, LEDs y válvulas.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --amp-tolex:       #0a0a09;
+  --amp-cloth-warp:  #17171a;
+  --amp-chassis-hi:  #232320;
+  --amp-chassis-lo:  #131312;
+  --amp-edge:        #000;
+  --amp-piping:      #2e2a24;
+
+  --amp-bevel-light: rgba(255, 248, 235, .07);
+  --amp-bevel-dark:  rgba(0, 0, 0, .8);
+
+  --amp-amber:       #ff9a24;
+  --amp-amber-glow:  rgba(255, 154, 36, .6);
+  --amp-red:         #ff3b2c;
+  --amp-green:       #4fd873;
+  --amp-teal:        #34d1b5;
+  --amp-teal-glow:   rgba(52, 209, 181, .55);
+  --amp-violet:      #b487ff;
+  --amp-violet-glow: rgba(180, 135, 255, .55);
+
+  --amp-ink:         #cfc7b8;
+  --amp-ink-dim:     #a49b8a;
+  --amp-ink-mut:     #6f6a5f;
+
+  --amp-screen-bg:   #080d0a;
+  --amp-screen-ink:  #6dea96;
+}
+
+body {
+  background:
+    radial-gradient(900px 340px at 50% -140px, rgba(255, 200, 140, .045) 0%, transparent 72%),
+    repeating-conic-gradient(rgba(255,255,255,.011) 0% 25%, transparent 0% 50%),
+    var(--amp-tolex);
+  background-size: auto, 5px 5px, auto;
+}
+
+/* ── superficies de gabinete reutilizables ────────────────────────────── */
+
+.amp-chassis {
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,.012) 0 1px, rgba(0,0,0,.012) 1px 2px),
+    linear-gradient(178deg, var(--amp-chassis-hi) 0%, var(--amp-chassis-lo) 100%);
+  box-shadow:
+    inset 0 1px 0 var(--amp-bevel-light),
+    inset 0 -2px 4px var(--amp-bevel-dark);
+}
+
+.amp-cloth {
+  background:
+    linear-gradient(178deg, rgba(255,255,255,.03) 0%, transparent 38%, rgba(0,0,0,.45) 100%),
+    repeating-linear-gradient( 45deg, rgba(255,255,255,.05) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(-45deg, rgba(0,0,0,.5)        0 1px, transparent 1px 4px),
+    var(--amp-cloth-warp);
+}
+
+.amp-screw {
+  position: absolute;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: linear-gradient(150deg, #4d4840 0%, #292520 55%, #131110 100%);
+  box-shadow:
+    inset 0 1px 1px rgba(255,255,255,.28),
+    inset 0 -1px 1px rgba(0,0,0,.7),
+    0 1px 2px rgba(0,0,0,.85);
+  pointer-events: none;
+}
+.amp-screw::after {
+  content: "";
+  position: absolute;
+  left: 2px; right: 2px; top: 50%;
+  height: 1.4px;
+  transform: translateY(-50%) rotate(34deg);
+  background: rgba(0,0,0,.75);
+  border-radius: 1px;
+  box-shadow: 0 1px 0 rgba(255,255,255,.1);
+}
+.amp-screw.tl { top: 6px;   left: 7px; }
+.amp-screw.tr { top: 6px;   right: 7px; }
+.amp-screw.bl { bottom: 6px;left: 7px; }
+.amp-screw.br { bottom: 6px;right: 7px; }
+
+.amp-lamp {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: #131110;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.95), 0 1px 0 rgba(255,255,255,.05);
+  display: inline-block;
+}
+.amp-lamp.on {
+  background: radial-gradient(circle at 35% 30%, #ffd695, var(--amp-amber) 58%, #6d3b06);
+  box-shadow: 0 0 10px var(--amp-amber-glow), inset 0 1px 1px rgba(255,255,255,.45);
+}
+
+/* ── recoloreo global de la paleta Tailwind gris/color al lenguaje del amp ─
+   El resto de la app sigue usando clases utilitarias de Tailwind (bg-gray-900,
+   text-amber-400, etc). En vez de reescribir cada componente, se reasigna acá
+   el valor de esas clases al vocabulario visual del ampli. */
+
+.bg-gray-950 { background-color: var(--amp-tolex) !important; }
+.bg-gray-900 { background-color: var(--amp-chassis-lo) !important; }
+.bg-gray-800 { background-color: #1a1918 !important; }
+.bg-gray-700 { background-color: #242220 !important; }
+.hover\:bg-gray-800:hover { background-color: #201f1c !important; }
+.hover\:bg-gray-700:hover { background-color: #2b2926 !important; }
+
+.border-gray-800 { border-color: #000 !important; }
+.border-gray-700 { border-color: var(--amp-piping) !important; }
+
+.text-white     { color: var(--amp-ink) !important; }
+.text-gray-300  { color: var(--amp-ink-dim) !important; }
+.text-gray-400  { color: var(--amp-ink-dim) !important; }
+.text-gray-500  { color: var(--amp-ink-mut) !important; }
+.text-gray-600  { color: var(--amp-ink-mut) !important; }
+.hover\:text-gray-200:hover { color: var(--amp-ink) !important; }
+.hover\:text-gray-300:hover { color: var(--amp-ink) !important; }
+
+.text-amber-300, .text-amber-400 {
+  color: var(--amp-amber) !important;
+  text-shadow: 0 0 10px var(--amp-amber-glow);
+}
+.bg-amber-400, .bg-amber-600 {
+  background: linear-gradient(180deg, #ffb85c, var(--amp-amber)) !important;
+  box-shadow: 0 0 14px var(--amp-amber-glow);
+}
+.text-amber-950 { color: #2a1704 !important; }
+.hover\:bg-amber-900\/40:hover, .hover\:bg-amber-900\/50:hover {
+  background-color: rgba(255,154,36,.12) !important;
+}
+
+.text-teal-400 { color: var(--amp-teal) !important; text-shadow: 0 0 10px var(--amp-teal-glow); }
+.bg-teal-600   { background: linear-gradient(180deg, #4fe0c4, var(--amp-teal)) !important; box-shadow: 0 0 14px var(--amp-teal-glow); }
+
+.text-violet-300, .text-violet-400 { color: var(--amp-violet) !important; }
+.from-violet-600, .to-violet-700, .from-violet-500, .to-violet-600 {
+  --tw-gradient-from: #3a2a5c !important;
+  --tw-gradient-to: #1c1530 !important;
+}
+.shadow-violet-900\/40, .shadow-violet-800\/50 { box-shadow: 0 0 16px var(--amp-violet-glow) !important; }
+
+.hover\:bg-red-900\/40:hover { background-color: rgba(255,59,44,.14) !important; }
+.hover\:text-red-400:hover { color: var(--amp-red) !important; }
+
 /* ─────────────────────────────────────────────────────────────────────────────
    FRETBOARD NOTE DOTS — GPU-accelerated fade+scale on mount.
    Replaces the previous framer-motion spring per cell (which fired 100+
@@ -42,41 +190,41 @@ html, body, #root {
    ───────────────────────────────────────────────────────────────────────────── */
 
 :root {
-  /* Background disc */
-  --circle-bg:           #0f172a;
-  --circle-bg-inner:     #1e3a5c;
+  /* Background disc — chapa de chasis */
+  --circle-bg:           #161513;
+  --circle-bg-inner:     #201d18;
 
   /* Center circle */
-  --circle-center:       #030712;
-  --circle-center-inner: #112240;
-  --circle-center-stroke:#1e293b;
+  --circle-center:       #0a0908;
+  --circle-center-inner: #1a1512;
+  --circle-center-stroke:#000;
 
   /* Structural */
-  --circle-outer-ring:   #1e2d45;
-  --circle-hover:        #334155;
+  --circle-outer-ring:   #2e2a24;
+  --circle-hover:        #332c1f;
 
   /* Text inside SVG */
-  --circle-text-primary:  #e2e8f0;
-  --circle-text-secondary:#94a3b8;
-  --circle-text-selected: #fbbf24;
-  --circle-text-muted:    #475569;
+  --circle-text-primary:  #cfc7b8;
+  --circle-text-secondary:#8b8377;
+  --circle-text-selected: #ff9a24;
+  --circle-text-muted:    #5d574e;
 
-  /* Sector fills — by distance */
-  --circle-d0: #92400e;
-  --circle-d1: #0d3d38;
-  --circle-d2: #1a3a5c;
-  --circle-d3: #1e2d45;
-  --circle-d4: #1a2535;
-  --circle-d5: #151e2e;
+  /* Sector fills — by distance, del ámbar al ámbar apagado */
+  --circle-d0: #6d3b06;
+  --circle-d1: #4a2c0a;
+  --circle-d2: #3a2410;
+  --circle-d3: #2e2018;
+  --circle-d4: #241c17;
+  --circle-d5: #1c1815;
   --circle-d6: #3b1515;
 
   /* Label / accent colors — by distance */
-  --circle-label-d0: #fbbf24;
-  --circle-label-d1: #2dd4bf;
-  --circle-label-d2: #60a5fa;
-  --circle-label-d3: #94a3b8;
-  --circle-label-d4: #64748b;
-  --circle-label-d5: #475569;
+  --circle-label-d0: #ffb85c;
+  --circle-label-d1: #ff9a24;
+  --circle-label-d2: #34d1b5;
+  --circle-label-d3: #a49b8a;
+  --circle-label-d4: #6f6a5f;
+  --circle-label-d5: #5d574e;
   --circle-label-d6: #f87171;
 }
 

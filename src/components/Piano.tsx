@@ -68,7 +68,7 @@ function buildKeys(octaves: number): KeyInfo[] {
 // teclado y las notas de la escala saltan sin que "se mezcle todo".
 
 const SCALE = { solid: '#f59e0b', soft: 'rgba(245,158,11,0.30)', ink: '#1c1917', edge: '#b45309' }
-const ROOT  = { solid: '#3b82f6', soft: 'rgba(59,130,246,0.40)', ink: '#f8fafc', edge: '#1d4ed8' }
+const ROOT  = { solid: '#ff3b2c', soft: 'rgba(255,59,44,0.40)', ink: '#f8fafc', edge: '#a8241a' }
 
 const accentOf = (inScale: boolean, isRoot: boolean) =>
   isRoot ? ROOT : inScale ? SCALE : null

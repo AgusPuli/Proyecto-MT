@@ -59,14 +59,14 @@ export default function Wheel({
 
       <defs>
         <radialGradient id="wheel-center" cx="35%" cy="32%" r="70%">
-          <stop offset="0%" stopColor="#1e293b" />
-          <stop offset="100%" stopColor="#0b1220" />
+          <stop offset="0%" stopColor="#241e17" />
+          <stop offset="100%" stopColor="#0d0a08" />
         </radialGradient>
       </defs>
 
       {/* Background disc */}
-      <circle cx={CX} cy={CY} r={R_OUTER + 6} fill="#0b1220" />
-      <circle cx={CX} cy={CY} r={R_OUTER + 6} fill="none" stroke="#1e293b" strokeWidth={1.5} />
+      <circle cx={CX} cy={CY} r={R_OUTER + 6} fill="#0d0a08" />
+      <circle cx={CX} cy={CY} r={R_OUTER + 6} fill="none" stroke="#241e17" strokeWidth={1.5} />
 
       {items.map((it, i) => {
         const center = i * seg
@@ -80,13 +80,13 @@ export default function Wheel({
               d={sectorPath(R_OUTER, R_INNER, center, half)}
               fill={it.fill}
               fillOpacity={it.highlight ? 1 : 0.82}
-              stroke="#0b1220" strokeWidth={1.5}
+              stroke="#0d0a08" strokeWidth={1.5}
               style={{ transition: 'fill-opacity 0.15s ease' }}
             />
             {it.highlight && (
               <path
                 d={sectorPath(R_OUTER, R_INNER, center, half)}
-                fill="none" stroke="#fef3c7" strokeWidth={2} opacity={0.9}
+                fill="none" stroke="#ffd695" strokeWidth={2} opacity={0.9}
               />
             )}
             <text x={lx} y={ly} textAnchor="middle" dominantBaseline="central"
@@ -99,14 +99,14 @@ export default function Wheel({
       })}
 
       {/* Center */}
-      <circle cx={CX} cy={CY} r={R_CENTER} fill="url(#wheel-center)" stroke="#334155" strokeWidth={1.5} />
+      <circle cx={CX} cy={CY} r={R_CENTER} fill="url(#wheel-center)" stroke="#3a332a" strokeWidth={1.5} />
       <text x={CX} y={CY - 10} textAnchor="middle" dominantBaseline="middle"
         fontSize={centerTop.length > 4 ? 30 : 40} fontWeight={900} fill={centerColor}
         style={{ pointerEvents: 'none', letterSpacing: '0.02em' }}>
         {centerTop}
       </text>
       <text x={CX} y={CY + 26} textAnchor="middle" dominantBaseline="middle"
-        fontSize={12} fontWeight={600} fill="#94a3b8"
+        fontSize={12} fontWeight={600} fill="#a49b8a"
         style={{ pointerEvents: 'none' }}>
         {centerBottom}
       </text>
