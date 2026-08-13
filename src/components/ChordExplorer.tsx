@@ -13,6 +13,7 @@ import {
 import ChordDiagram from './ChordDiagram'
 import PianoChordDiagram from './PianoChordDiagram'
 import Wheel, { type WheelItem } from './ChordWheel'
+import { useIsMobile } from '../hooks/useIsMobile'
 import type { NoteName } from '../types'
 
 interface ChordExplorerProps {
@@ -37,6 +38,7 @@ export default function ChordExplorer({
   totalFrets = 15,
   mode = 'guitar',
 }: ChordExplorerProps) {
+  const isMobile = useIsMobile()
   const [step, setStep] = useState<Step>('note')
   const [note, setNote] = useState<NoteName | null>(null)
   const [quality, setQuality] = useState<ChordQuality | null>(null)
@@ -154,7 +156,7 @@ export default function ChordExplorer({
               <p className="text-sm text-gray-400 text-center">
                 Elegí la <span className="text-teal-300 font-semibold">fundamental</span> del acorde
               </p>
-              <div className="w-full flex justify-center aspect-square max-w-[380px]">
+              <div className="w-full flex justify-center aspect-square" style={{ maxWidth: isMobile ? 342 : 380 }}>
                 <Wheel
                   items={noteItems}
                   onSelect={i => { setNote(CHROMATIC_NOTES[i]); setStep('quality') }}
@@ -173,7 +175,7 @@ export default function ChordExplorer({
               <p className="text-sm text-gray-400 text-center">
                 Tipo de acorde para <span className="text-amber-300 font-bold">{note}</span>
               </p>
-              <div className="w-full flex justify-center aspect-square max-w-[380px]">
+              <div className="w-full flex justify-center aspect-square" style={{ maxWidth: isMobile ? 342 : 380 }}>
                 <Wheel
                   items={qualItems}
                   onSelect={i => { setQuality(CHORD_QUALITIES[i]); setStep('voicings') }}
@@ -202,8 +204,8 @@ export default function ChordExplorer({
           {/* STEP 3 — voicings */}
           {step === 'voicings' && note && quality && (
             mode === 'piano'
-              ? <PianoVoicingsView note={note} quality={quality} />
-              : <VoicingsView note={note} quality={quality} tuning={tuning} voicings={voicings} />
+              ? <PianoVoicingsView note={note} quality={quality} isMobile={isMobile} />
+              : <VoicingsView note={note} quality={quality} tuning={tuning} voicings={voicings} isMobile={isMobile} />
           )}
         </div>
       </div>
@@ -244,12 +246,13 @@ function Crumb({
 // ─────────────────────────────────────────────────────────────────────────────
 
 function VoicingsView({
-  note, quality, tuning, voicings,
+  note, quality, tuning, voicings, isMobile,
 }: {
   note: NoteName
   quality: ChordQuality
   tuning: NoteName[]
   voicings: ReturnType<typeof generateChordVoicings>
+  isMobile: boolean
 }) {
   const notes = getChordNotes(note, quality)
   const cat = CATEGORY_COLOR[quality.category]
@@ -303,7 +306,7 @@ function VoicingsView({
           {voicings.map((v, i) => (
             <div key={i}
               className="flex flex-col items-center gap-2 p-3 rounded-xl bg-gray-800/40 border border-gray-700/50 hover:border-teal-700/60 hover:bg-gray-800/70 transition-colors">
-              <ChordDiagram voicing={v} tuning={tuning} root={note} />
+              <ChordDiagram voicing={v} tuning={tuning} root={note} scale={isMobile ? 0.9 : 1} />
               <span className="text-[11px] font-semibold text-gray-400 text-center">
                 {positionLabel(v)}
               </span>
@@ -321,7 +324,7 @@ function VoicingsView({
 
 const INVERSION_LABEL = ['Estado fundamental', '1ª inversión', '2ª inversión', '3ª inversión', '4ª inversión']
 
-function PianoVoicingsView({ note, quality }: { note: NoteName; quality: ChordQuality }) {
+function PianoVoicingsView({ note, quality, isMobile }: { note: NoteName; quality: ChordQuality; isMobile: boolean }) {
   const notes = getChordNotes(note, quality)
   const cat   = CATEGORY_COLOR[quality.category]
   const rootPc = CHROMATIC_NOTES.indexOf(note)
@@ -392,6 +395,7 @@ function PianoVoicingsView({ note, quality }: { note: NoteName; quality: ChordQu
                   positions={positions}
                   rootPosition={positions[0]}
                   octaves={octaves}
+                  keyW={isMobile ? 17 * 0.9 : 17}
                 />
               </div>
             </div>
