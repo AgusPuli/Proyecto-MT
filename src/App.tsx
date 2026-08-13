@@ -13,6 +13,7 @@ import ScaleTones from './components/ScaleTones'
 import PracticeMode from './components/PracticeMode'
 import SongEditor from './components/SongEditor'
 import ChordExplorer from './components/ChordExplorer'
+import LandscapeSuggestion from './components/LandscapeSuggestion'
 import { computeFretboard, BASS_TUNING, GUITAR_TUNING } from './data/notes'
 import { getAllScales, BUILT_IN_SCALES, CHROMATIC_SCALE } from './data/scales'
 import { scaleRepository } from './data/storage'
@@ -144,15 +145,20 @@ export default function App() {
   return (
     <div className="flex flex-col h-screen bg-gray-950 text-white overflow-hidden">
 
+      <LandscapeSuggestion />
+
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <header className="flex-shrink-0 bg-gray-900 border-b border-gray-800 px-2 py-1 flex flex-wrap items-center gap-1.5 z-20">
 
-        {/* Sidebar toggle */}
+        {/* Sidebar toggle — rectángulo = pantalla, franja izquierda rellena = panel visible */}
         <button onClick={() => setSidebarOpen(v => !v)}
           className="p-1 rounded hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors focus:outline-none"
-          title={sidebarOpen ? 'Ocultar escalas' : 'Mostrar escalas'}>
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          title={sidebarOpen ? 'Ocultar panel de escalas' : 'Mostrar panel de escalas'}>
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+            <rect x="3" y="4" width="18" height="16" rx="2" />
+            <rect x="3" y="4" width="6" height="16" rx="1"
+              fill="currentColor" stroke="none" opacity={sidebarOpen ? 0.55 : 0} />
+            <line x1="9" y1="4" x2="9" y2="20" />
           </svg>
         </button>
 
@@ -161,12 +167,15 @@ export default function App() {
           Bass<span className="text-teal-400">Theory</span>
         </h1>
 
-        {/* Plegar / desplegar la barra de herramientas */}
+        {/* Plegar / desplegar la barra de herramientas — franja superior rellena = visible */}
         <button onClick={() => setHeaderOpen(v => !v)}
           className="p-1 rounded hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors focus:outline-none"
           title={headerOpen ? 'Ocultar barra de herramientas' : 'Mostrar barra de herramientas'}>
-          <svg className={`w-4 h-4 transition-transform ${headerOpen ? '' : 'rotate-180'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+            <rect x="3" y="4" width="18" height="16" rx="2" />
+            <rect x="3" y="4" width="18" height="5" rx="1"
+              fill="currentColor" stroke="none" opacity={headerOpen ? 0.55 : 0} />
+            <line x1="3" y1="9" x2="21" y2="9" />
           </svg>
         </button>
 
@@ -282,6 +291,8 @@ export default function App() {
                       instrument={instrument}
                       tuning={currentTuning}
                       isStandardTuning={isStandardTuning}
+                      root={root}
+                      scale={selectedScale}
                       onFretClick={handleFretClick}
                       onStringTuningChange={handleStringTuningChange}
                       onResetTuning={handleResetTuning}
@@ -373,22 +384,7 @@ export default function App() {
       />
 
       {/* Footer */}
-      <footer className="flex-shrink-0 bg-gray-900 border-t border-gray-800 px-4 py-2 flex flex-wrap items-center gap-3">
-        <span className="text-sm font-bold text-amber-400">
-          {root}&nbsp;{selectedScale.name}
-        </span>
-        <div className="h-4 w-px bg-gray-700" />
-        <div className="flex flex-wrap gap-1">
-          {selectedScale.intervals.map(interval => (
-            <span key={interval}
-              className={`px-1.5 py-0.5 rounded text-xs font-semibold ${interval === '1'
-                ? 'bg-amber-400/20 text-amber-400 border border-amber-700/50'
-                : 'bg-gray-800 text-gray-400 border border-gray-700'}`}>
-              {interval}
-            </span>
-          ))}
-        </div>
-        <div className="flex-1" />
+      <footer className="flex-shrink-0 bg-gray-900 border-t border-gray-800 px-4 py-2 flex flex-wrap items-center justify-end gap-3">
         <span className="text-xs text-gray-600">{fretboardNotes.length} notes · {TOTAL_FRETS} frets</span>
       </footer>
     </div>

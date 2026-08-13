@@ -1,5 +1,6 @@
 import { memo, useState } from 'react'
 import { BUILT_IN_SCALES } from '../data/scales'
+import { useIsMobile } from '../hooks/useIsMobile'
 import type { NoteName, Scale } from '../types'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -312,6 +313,8 @@ function CircleOfFifthsInner({
   const [localIdx,  setLocalIdx]  = useState<number>(NOTE_TO_INDEX[root] ?? 0)
   const [activeTab, setActiveTab] = useState<Tab>('tonalidad')
   const [showInfo,  setShowInfo]  = useState(false)
+  const isMobile = useIsMobile()
+  const circleSize = isMobile ? 374 : 440  // shrink 15% on phone-sized viewports
 
   const majorScale = BUILT_IN_SCALES.find(s => s.id === 'major')!
 
@@ -357,7 +360,7 @@ function CircleOfFifthsInner({
 
         {/* ── SVG Circle ────────────────────────────────────────────────────── */}
         <div className="flex flex-col items-center gap-3">
-          <svg viewBox="0 0 500 500" width="440" height="440"
+          <svg viewBox="0 0 500 500" width={circleSize} height={circleSize}
             className="select-none overflow-visible"
             style={{ filter: 'drop-shadow(0 4px 24px rgba(0,0,0,0.5))' }}>
 

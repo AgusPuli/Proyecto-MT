@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { BASS_TUNING, GUITAR_TUNING, CHROMATIC_NOTES, getNoteAtFret, NOTE_TO_SOLFEGE } from '../data/notes'
-import type { FretNote, LabelMode, NoteName, InstrumentType } from '../types'
+import type { FretNote, LabelMode, NoteName, InstrumentType, Scale } from '../types'
 
 interface FretboardProps {
   notes: FretNote[]
@@ -9,6 +9,9 @@ interface FretboardProps {
   instrument?: InstrumentType
   tuning?: NoteName[]
   isStandardTuning?: boolean
+  /** Nota raíz y escala activa — se muestran a la izquierda de los controles de zoom. */
+  root?: NoteName
+  scale?: Scale
   onFretClick: (string: number, fret: number, note: NoteName) => void
   onStringTuningChange?: (stringIdx: number, newNote: NoteName) => void
   onResetTuning?: () => void
@@ -85,6 +88,8 @@ export default function Fretboard({
   instrument = 'bass',
   tuning: propTuning,
   isStandardTuning = true,
+  root,
+  scale,
   onFretClick,
   onStringTuningChange,
   onResetTuning,
@@ -161,8 +166,28 @@ export default function Fretboard({
   return (
     <div className="select-none">
 
-      {/* ── Top bar: zoom controls + tuning badge ─────────────────────────── */}
-      <div className="flex items-center gap-2 mb-2 pr-1">
+      {/* ── Top bar: scale info + zoom controls + tuning badge ────────────── */}
+      <div className="flex items-center gap-2 mb-2 pr-1 flex-wrap">
+
+        {/* Scale info — root note + name + interval badges */}
+        {root && scale && (
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <span className="text-sm font-bold text-amber-400 whitespace-nowrap">
+              {root}&nbsp;{scale.name}
+            </span>
+            <div className="h-4 w-px bg-gray-700 flex-shrink-0" />
+            <div className="flex flex-wrap gap-1">
+              {scale.intervals.map(interval => (
+                <span key={interval}
+                  className={`px-1.5 py-0.5 rounded text-xs font-semibold ${interval === '1'
+                    ? 'bg-amber-400/20 text-amber-400 border border-amber-700/50'
+                    : 'bg-gray-800 text-gray-400 border border-gray-700'}`}>
+                  {interval}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="flex-1" />
 
