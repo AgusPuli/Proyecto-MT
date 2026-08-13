@@ -14,6 +14,7 @@ import PracticeMode from './components/PracticeMode'
 import SongEditor from './components/SongEditor'
 import ChordExplorer from './components/ChordExplorer'
 import LandscapeSuggestion from './components/LandscapeSuggestion'
+import { useAutoFullscreen } from './hooks/useAutoFullscreen'
 import { computeFretboard, BASS_TUNING, GUITAR_TUNING } from './data/notes'
 import { getAllScales, BUILT_IN_SCALES, CHROMATIC_SCALE } from './data/scales'
 import { scaleRepository } from './data/storage'
@@ -40,6 +41,7 @@ const TOTAL_FRETS = 24
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function App() {
+  useAutoFullscreen()
   const [root, setRoot]             = useState<NoteName>(DEFAULT_ROOT)
   const [selectedScale, setScale]   = useState<Scale>(DEFAULT_SCALE)
   const [labelMode, setLabelMode]   = useState<LabelMode>('note')
