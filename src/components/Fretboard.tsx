@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { BASS_TUNING, GUITAR_TUNING, CHROMATIC_NOTES, getNoteAtFret, NOTE_TO_SOLFEGE } from '../data/notes'
 import type { FretNote, LabelMode, NoteName, InstrumentType } from '../types'
 
@@ -63,9 +62,6 @@ const ZOOM_STEP = 0.1
  * Width of each fret column in pixels (base, before zoom).
  * Mirrors real bass fret spacing: each fret is 1/2^(1/12) narrower than the
  * one before it. Fret 1 = 90 px; clamped to 28 px minimum at the high end.
- *
- * Pass inline styles — Tailwind can't generate arbitrary widths at build time.
- * TODO: When guitar mode is added, accept scaleLength as a prop and rescale.
  */
 function getFretWidth(fret: number): number {
   if (fret === 0) return 56  // open-string nut area
@@ -78,7 +74,7 @@ function getLabel(note: FretNote, mode: LabelMode): string {
     case 'solfege':  return NOTE_TO_SOLFEGE[note.note]
     case 'interval': return note.interval
     case 'degree':   return note.degree
-    case 'finger':   return String(note.finger) // 0 = open string, 1-4 = fingers
+    case 'finger':   return String(note.finger)
   }
 }
 
@@ -99,15 +95,15 @@ export default function Fretboard({
 
   const cellH   = Math.round(BASE_CELL_H * zoom)
   const dotSize = Math.round(BASE_DOT_SIZE * zoom)
-  const w       = (fret: number) => Math.round(getFretWidth(fret) * zoom)
 
-  // Get configuration for the selected instrument
+  // Memoize instrument config + tuning to keep stable references
   const config = INSTRUMENT_CONFIG[instrument]
-  const tuning = propTuning ?? (instrument === 'guitar' ? GUITAR_TUNING : BASS_TUNING)
+  const tuning = useMemo(
+    () => propTuning ?? (instrument === 'guitar' ? GUITAR_TUNING : BASS_TUNING),
+    [propTuning, instrument],
+  )
 
-  // Build labels array from current tuning (display order: top = highest string)
-  // tuning[0] = lowest, tuning[length-1] = highest
-  // display string 0 (top) corresponds to tuning[length-1] (highest)
+  // Labels array from current tuning (top string = highest pitch)
   const labels = useMemo(() => {
     return Array.from({ length: tuning.length }, (_, displayIdx) => {
       const tuningIdx = (tuning.length - 1) - displayIdx
@@ -122,25 +118,45 @@ export default function Fretboard({
     return map
   }, [notes])
 
-  // stringNum → tuning index
-  function openNoteForString(stringNum: number): NoteName {
-    const tuningIdx = (tuning.length - 1) - stringNum
-    return tuning[tuningIdx]
-  }
+  // Fret widths — precompute once per zoom to avoid recomputing in loops
+  const fretWidths = useMemo(() => {
+    const arr: number[] = []
+    for (let f = 0; f <= totalFrets; f++) {
+      arr.push(Math.round(getFretWidth(f) * zoom))
+    }
+    return arr
+  }, [zoom, totalFrets])
+
+  const fretColumns = useMemo(
+    () => Array.from({ length: totalFrets }, (_, i) => i + 1),
+    [totalFrets],
+  )
+  const strings = useMemo(
+    () => Array.from({ length: tuning.length }, (_, i) => i),
+    [tuning.length],
+  )
+
+  // Stable click handler — receives string/fret so children don't need per-cell closures
+  const handleCellClick = useCallback(
+    (stringNum: number, fret: number) => {
+      const tuningIdx = (tuning.length - 1) - stringNum
+      const openNote = tuning[tuningIdx]
+      onFretClick(stringNum, fret, getNoteAtFret(openNote, fret))
+    },
+    [tuning, onFretClick],
+  )
 
   // Close dropdown when clicking outside
   useEffect(() => {
+    if (openDropdown === null) return
     function onOutside(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setOpenDropdown(null)
       }
     }
-    if (openDropdown !== null) document.addEventListener('mousedown', onOutside)
+    document.addEventListener('mousedown', onOutside)
     return () => document.removeEventListener('mousedown', onOutside)
   }, [openDropdown])
-
-  const fretColumns = Array.from({ length: totalFrets }, (_, i) => i + 1)
-  const strings     = Array.from({ length: tuning.length }, (_, i) => i)
 
   return (
     <div className="select-none">
@@ -231,7 +247,6 @@ export default function Fretboard({
               {strings.map(s => {
                 const currentNote = labels[s]
                 const isOpen = openDropdown === s
-                const descendingNotes = getNotesDescending(currentNote)
 
                 return (
                   <div
@@ -262,7 +277,7 @@ export default function Fretboard({
                       )}
                     </button>
 
-                    {/* Dropdown menu */}
+                    {/* Dropdown menu — only mount when open (lazy) */}
                     {isOpen && onStringTuningChange && (
                       <div
                         className="absolute left-full ml-1 top-1/2 -translate-y-1/2 bg-gray-900 border border-gray-700 rounded-lg shadow-2xl overflow-hidden"
@@ -271,7 +286,7 @@ export default function Fretboard({
                         <div className="text-[9px] text-gray-600 uppercase tracking-widest font-semibold px-2 pt-1.5 pb-0.5 sticky top-0 bg-gray-900">
                           Afinar a
                         </div>
-                        {descendingNotes.map(note => (
+                        {getNotesDescending(currentNote).map(note => (
                           <button
                             key={note}
                             onClick={() => {
@@ -297,25 +312,23 @@ export default function Fretboard({
             {/* Fret 0 — open strings; right border = NUT */}
             <div
               className="flex flex-col flex-shrink-0 bg-amber-950 border-r-4"
-              style={{ width: w(0), borderColor: '#d1d5db' }}
+              style={{ width: fretWidths[0], borderColor: '#d1d5db' }}
             >
-              {strings.map(s => {
-                const noteData = noteMap.get(`${s}-0`)
-                return (
-                  <FretCell
-                    key={s}
-                    stringIdx={s}
-                    noteData={noteData}
-                    labelMode={labelMode}
-                    thickness={config.thickness[s]}
-                    color={config.colors[s]}
-                    cellH={cellH}
-                    dotSize={dotSize}
-                    zoom={zoom}
-                    onClick={() => onFretClick(s, 0, getNoteAtFret(openNoteForString(s), 0))}
-                  />
-                )
-              })}
+              {strings.map(s => (
+                <FretCell
+                  key={s}
+                  stringIdx={s}
+                  fret={0}
+                  noteData={noteMap.get(`${s}-0`)}
+                  labelMode={labelMode}
+                  thickness={config.thickness[s]}
+                  color={config.colors[s]}
+                  cellH={cellH}
+                  dotSize={dotSize}
+                  zoom={zoom}
+                  onClick={handleCellClick}
+                />
+              ))}
             </div>
 
             {/* Frets 1 – N */}
@@ -323,7 +336,7 @@ export default function Fretboard({
               <div
                 key={fret}
                 className="relative flex flex-col flex-shrink-0 bg-amber-950 border-r"
-                style={{ width: w(fret), borderColor: 'rgba(75,85,99,0.7)' }}
+                style={{ width: fretWidths[fret], borderColor: 'rgba(75,85,99,0.7)' }}
               >
                 {/* Position marker — centered on the neck, like a real inlay dot */}
                 {MARKER_FRETS.has(fret) && (
@@ -338,23 +351,21 @@ export default function Fretboard({
                     )}
                   </div>
                 )}
-                {strings.map(s => {
-                  const noteData = noteMap.get(`${s}-${fret}`)
-                  return (
-                    <FretCell
-                      key={s}
-                      stringIdx={s}
-                      noteData={noteData}
-                      labelMode={labelMode}
-                      thickness={config.thickness[s]}
-                      color={config.colors[s]}
-                      cellH={cellH}
-                      dotSize={dotSize}
-                      zoom={zoom}
-                      onClick={() => onFretClick(s, fret, getNoteAtFret(openNoteForString(s), fret))}
-                    />
-                  )
-                })}
+                {strings.map(s => (
+                  <FretCell
+                    key={s}
+                    stringIdx={s}
+                    fret={fret}
+                    noteData={noteMap.get(`${s}-${fret}`)}
+                    labelMode={labelMode}
+                    thickness={config.thickness[s]}
+                    color={config.colors[s]}
+                    cellH={cellH}
+                    dotSize={dotSize}
+                    zoom={zoom}
+                    onClick={handleCellClick}
+                  />
+                ))}
               </div>
             ))}
           </div>
@@ -364,13 +375,13 @@ export default function Fretboard({
             {/* Spacer: string-name column */}
             <div className="flex-shrink-0" style={{ width: Math.round(44 * zoom) }} />
             {/* Spacer: fret-0 column */}
-            <div className="flex-shrink-0" style={{ width: w(0) }} />
+            <div className="flex-shrink-0" style={{ width: fretWidths[0] }} />
 
             {fretColumns.map(fret => (
               <div
                 key={fret}
                 className="flex-shrink-0 flex flex-col items-center pt-1 pb-1 gap-0.5"
-                style={{ width: w(fret) }}
+                style={{ width: fretWidths[fret] }}
               >
                 {/* Dot(s) */}
                 <div className="flex items-center gap-0.5 h-3">
@@ -402,10 +413,12 @@ export default function Fretboard({
 
 // ---------------------------------------------------------------------------
 // FretCell — a single string × fret intersection
+// Memoized: only re-renders when its own props change (not the whole grid).
 // ---------------------------------------------------------------------------
 
 interface FretCellProps {
   stringIdx: number
+  fret: number
   noteData: FretNote | undefined
   labelMode: LabelMode
   thickness: number
@@ -413,10 +426,10 @@ interface FretCellProps {
   cellH: number
   dotSize: number
   zoom: number
-  onClick: () => void
+  onClick: (stringIdx: number, fret: number) => void
 }
 
-function NoteDot({
+const NoteDot = memo(function NoteDot({
   note,
   labelMode,
   dotSize,
@@ -430,25 +443,22 @@ function NoteDot({
   const label    = getLabel(note, labelMode)
   const fontSize = Math.round((label.length <= 2 ? 14 : label.length === 3 ? 12 : 10) * zoom)
   return (
-    <motion.span
-      className={`relative z-10 flex items-center justify-center rounded-full font-bold leading-none
+    <span
+      className={`fretboard-note-dot relative z-10 flex items-center justify-center rounded-full font-bold leading-none
         ${note.isRoot
           ? 'bg-amber-400 text-amber-950 shadow-md shadow-amber-900/60 ring-2 ring-amber-300/40'
           : 'bg-teal-500 text-gray-950 shadow-sm shadow-teal-900/40'
         }`}
       style={{ width: dotSize, height: dotSize, fontSize }}
-      initial={{ scale: 0, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      exit={{ scale: 0, opacity: 0 }}
-      transition={{ type: 'spring', stiffness: 500, damping: 26 }}
     >
       {label}
-    </motion.span>
+    </span>
   )
-}
+})
 
-function FretCell({
+const FretCell = memo(function FretCell({
   stringIdx,
+  fret,
   noteData,
   labelMode,
   thickness,
@@ -458,9 +468,10 @@ function FretCell({
   zoom,
   onClick,
 }: FretCellProps) {
+  const handleClick = useCallback(() => onClick(stringIdx, fret), [onClick, stringIdx, fret])
   return (
     <div
-      onClick={onClick}
+      onClick={handleClick}
       className="relative flex items-center justify-center cursor-pointer hover:bg-amber-800/20 transition-colors"
       style={{ height: cellH }}
       data-string={stringIdx}
@@ -476,13 +487,10 @@ function FretCell({
         }}
       />
 
-      {/* Note dot — animates in when it appears, out when it disappears;
-          stays untouched (no animation) while it persists across changes. */}
-      <AnimatePresence>
-        {noteData && (
-          <NoteDot key="dot" note={noteData} labelMode={labelMode} dotSize={dotSize} zoom={zoom} />
-        )}
-      </AnimatePresence>
+      {/* Note dot — CSS fade-in on mount, no per-cell framer-motion */}
+      {noteData && (
+        <NoteDot note={noteData} labelMode={labelMode} dotSize={dotSize} zoom={zoom} />
+      )}
     </div>
   )
-}
+})

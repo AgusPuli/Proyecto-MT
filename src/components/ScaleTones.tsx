@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { getNoteAtFret, ALL_INTERVALS } from '../data/notes'
 import type { IntervalName, NoteName, Scale } from '../types'
 
@@ -26,7 +27,7 @@ const CHORD_TONES: { label: string; intervals: IntervalName[] }[] = [
   { label: 'Séptima', intervals: ['b7', '7']  },
 ]
 
-export default function ScaleTones({ root, scale }: Props) {
+function ScaleTonesInner({ root, scale }: Props) {
   return (
     <div className="flex flex-wrap gap-2 mt-4">
       {CHORD_TONES.map(({ label, intervals }) => {
@@ -70,3 +71,6 @@ export default function ScaleTones({ root, scale }: Props) {
     </div>
   )
 }
+
+const ScaleTones = memo(ScaleTonesInner)
+export default ScaleTones

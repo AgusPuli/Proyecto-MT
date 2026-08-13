@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import { BUILT_IN_SCALES } from '../data/scales'
 import type { NoteName, Scale } from '../types'
 
@@ -305,7 +305,7 @@ const PROGRESSIONS: Progression[] = [
 
 type Tab = 'tonalidad' | 'relaciones' | 'modos' | 'progresiones'
 
-export default function CircleOfFifths({
+function CircleOfFifthsInner({
   root, selectedScale, onRootChange, onScaleChange, synchronized, onSyncChange,
 }: CircleOfFifthsProps) {
   const [hovered,   setHovered]   = useState<number | null>(null)
@@ -680,3 +680,8 @@ export default function CircleOfFifths({
     </>
   )
 }
+
+// Memoize: only re-renders when props actually change. Prevents costly SVG
+// re-renders when unrelated state (labelMode, tuning, etc.) updates in App.
+const CircleOfFifths = memo(CircleOfFifthsInner)
+export default CircleOfFifths

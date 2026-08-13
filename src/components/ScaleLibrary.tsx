@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import type { Scale, ScaleCategory } from '../types'
 import { CATEGORY_LABELS, CATEGORY_ORDER } from '../data/scales'
 
@@ -20,7 +20,7 @@ const MODE_NOTE: Record<string, string> = {
   'locrian':    'Si',   // grado 7
 }
 
-export default function ScaleLibrary({
+function ScaleLibraryInner({
   scales,
   activeScaleId,
   onSelect,
@@ -131,3 +131,6 @@ export default function ScaleLibrary({
     </div>
   )
 }
+
+const ScaleLibrary = memo(ScaleLibraryInner)
+export default ScaleLibrary

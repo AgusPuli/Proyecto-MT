@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { Capacitor } from '@capacitor/core'
 import Fretboard from './components/Fretboard'
@@ -80,23 +80,22 @@ export default function App() {
   const standardTuning = instrument === 'guitar' ? GUITAR_TUNING : BASS_TUNING
   const customTuning = instrument === 'guitar' ? customGuitarTuning : customBassTuning
   const currentTuning = customTuning ?? standardTuning
-  // Check if current tuning matches standard
-  const isStandardTuning = !customTuning || customTuning.every((n, i) => n === standardTuning[i])
+  // Check if current tuning matches standard (memoized to keep stable ref)
+  const isStandardTuning = useMemo(
+    () => !customTuning || customTuning.every((n, i) => n === standardTuning[i]),
+    [customTuning, standardTuning],
+  )
 
   const fretboardNotes = useMemo(
     () => computeFretboard(root, activeScale, TOTAL_FRETS, chordFilter, DEFAULT_FINGERING, currentTuning),
-    [root, activeScale, chordFilter, instrument, customTuning],
+    [root, activeScale, chordFilter, currentTuning],
   )
 
-  // Handler to change a single string's tuning
-  function handleStringTuningChange(stringIdx: number, newNote: NoteName) {
-    // stringIdx in display order: 0 = top (highest), N-1 = bottom (lowest)
-    // Tuning array is reversed: tuning[0] = lowest, tuning[N-1] = highest
+  // Handler to change a single string's tuning (memoized for stable ref)
+  const handleStringTuningChange = useCallback((stringIdx: number, newNote: NoteName) => {
     const tuningIdx = (currentTuning.length - 1) - stringIdx
     const newTuning = [...currentTuning] as NoteName[]
     newTuning[tuningIdx] = newNote
-
-    // Check if new tuning matches standard (would reset to null)
     const matchesStandard = newTuning.every((n, i) => n === standardTuning[i])
 
     if (instrument === 'guitar') {
@@ -104,31 +103,30 @@ export default function App() {
     } else {
       setCustomBassTuning(matchesStandard ? null : newTuning)
     }
-  }
+  }, [currentTuning, standardTuning, instrument])
 
-  // Handler to reset tuning to standard
-  function handleResetTuning() {
-    if (instrument === 'guitar') {
-      setCustomGuitarTuning(null)
-    } else {
-      setCustomBassTuning(null)
-    }
-  }
+  const handleResetTuning = useCallback(() => {
+    if (instrument === 'guitar') setCustomGuitarTuning(null)
+    else setCustomBassTuning(null)
+  }, [instrument])
+
   const allScales = useMemo(() => getAllScales(customScales), [customScales])
 
-  function handleFretClick(_string: number, _fret: number, note: NoteName) { setRoot(note) }
-  function handleScaleSelect(scale: Scale) { setScale(scale) }
-  function handleSaveCustomScale(scale: Scale) {
+  // Stable click handlers to avoid re-rendering memoized children
+  const handleFretClick = useCallback((_string: number, _fret: number, note: NoteName) => {
+    setRoot(note)
+  }, [])
+  const handleScaleSelect = useCallback((scale: Scale) => setScale(scale), [])
+  const handleSaveCustomScale = useCallback((scale: Scale) => {
     scaleRepository.saveCustomScale(scale)
     setCustomScales(scaleRepository.getCustomScales())
     setScale(scale)
-  }
-  function handleDeleteCustomScale(id: string) {
+  }, [])
+  const handleDeleteCustomScale = useCallback((id: string) => {
     scaleRepository.deleteCustomScale(id)
-    const updated = scaleRepository.getCustomScales()
-    setCustomScales(updated)
-    if (selectedScale.id === id) setScale(DEFAULT_SCALE)
-  }
+    setCustomScales(scaleRepository.getCustomScales())
+    setScale(prev => prev.id === id ? DEFAULT_SCALE : prev)
+  }, [])
 
   if (off) {
     return (
