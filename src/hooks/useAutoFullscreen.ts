@@ -2,19 +2,20 @@ import { useEffect } from 'react'
 import { useIsMobile } from './useIsMobile'
 
 /**
- * On phone-sized viewports, requests fullscreen on the first tap.
- * Browsers require a user gesture to enter fullscreen, so we can't do it
- * on load — we arm a one-time listener instead. This hides the browser's
- * URL bar and, on most Android browsers, the system navigation bar too.
+ * On phone-sized viewports, requests fullscreen on tap whenever the app
+ * isn't already fullscreen. Browsers require a user gesture to enter
+ * fullscreen, so we listen persistently (not once) — a swipe gesture from
+ * the OS can kick the browser out of fullscreen, and the next tap should
+ * be able to re-enter it rather than being stuck without a way back in.
  */
 export function useAutoFullscreen() {
   const isMobile = useIsMobile()
 
   useEffect(() => {
     if (!isMobile) return
-    if (document.fullscreenElement) return
 
     function enterFullscreen() {
+      if (document.fullscreenElement) return
       const el = document.documentElement as HTMLElement & {
         webkitRequestFullscreen?: () => Promise<void> | void
       }
@@ -22,8 +23,8 @@ export function useAutoFullscreen() {
       request?.()?.catch?.(() => { /* ignored — user can still use the app normally */ })
     }
 
-    document.addEventListener('touchstart', enterFullscreen, { once: true, passive: true })
-    document.addEventListener('click', enterFullscreen, { once: true })
+    document.addEventListener('touchstart', enterFullscreen, { passive: true })
+    document.addEventListener('click', enterFullscreen)
 
     return () => {
       document.removeEventListener('touchstart', enterFullscreen)
